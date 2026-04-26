@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AS4 TAXI - Ultra Pro v9</title>
+    <title>AS4 TAXI - Ultra Pro v10</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -25,9 +25,9 @@
         button { border: none; border-radius: 12px; font-size: 13px; font-weight: bold; color: white; cursor: pointer; padding: 14px; }
         .btn-start { background: linear-gradient(135deg, #2ecc71, #27ae60); }
         .btn-end { background: linear-gradient(135deg, #e74c3c, #c0392b); }
-        .btn-new { background: #3498db; }
         .btn-report { background: #34495e; }
         .btn-history { background: #8e44ad; }
+        .btn-new { background: #3498db; }
         
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
         .modal-content { background: white; width: 90%; max-width: 380px; border-radius: 25px; padding: 20px; position: relative; }
@@ -77,7 +77,7 @@
     <div id="report-section" class="section-card">
         <div style="font-weight:bold; font-size:14px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
             <span>Earnings Chart</span>
-            <button onclick="downloadCSV()" style="padding:5px; font-size:10px; background:var(--primary); width:auto;">CSV ⬇</button>
+            <button onclick="downloadCSV()" style="padding:5px; font-size:10px; background:var(--primary); width:auto;">CSV Download ⬇</button>
         </div>
         <canvas id="earningsChart" height="150"></canvas>
         <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:12px;">
@@ -114,7 +114,7 @@
 </div>
 
 <script>
-    let sTime, watchID, totalKm = 0, lastLat, lastLon;
+    let sTime, watchID, totalKm = 0, lastLat, lastLon, currentRID = "";
     const RATE = 80, BASE = 100;
 
     function startRide() {
@@ -156,19 +156,19 @@
         let fare = manual ? parseInt(manual) : Math.round(BASE + (Math.max(0, totalKm - 1) * RATE));
         let from = document.getElementById('start-loc').value || "Current";
         let to = document.getElementById('end-loc').value || "Destination";
-        let rid = genReceiptID();
+        currentRID = genReceiptID();
         
         document.getElementById('r-body').innerHTML = `
-            <div class="r-row"><span>Receipt ID:</span> <b>${rid}</b></div>
+            <div class="r-row"><span>Receipt ID:</span> <b>${currentRID}</b></div>
             <div class="r-row"><span>Route:</span> <b>${from} ➔ ${to}</b></div>
             <div class="r-row"><span>Distance:</span> <b>${totalKm.toFixed(2)} km</b></div>
             <div class="r-row"><span>Time:</span> <b>${sTime.toLocaleTimeString()} - ${eTime.toLocaleTimeString()}</b></div>
         `;
         document.getElementById('r-total').innerText = "Total: Rs. " + fare;
         document.getElementById('qrcode').innerHTML = "";
-        new QRCode(document.getElementById("qrcode"), { text: rid, width: 80, height: 80 });
+        new QRCode(document.getElementById("qrcode"), { text: currentRID, width: 80, height: 80 });
         document.getElementById('receiptModal').style.display = "flex";
-        saveRide(fare, totalKm, from, to, rid);
+        saveRide(fare, totalKm, from, to, currentRID);
     }
 
     function saveRide(f, d, from, to, rid) {
@@ -189,14 +189,8 @@
         let h = JSON.parse(localStorage.getItem('as4_v9_data') || '[]');
         let fromD = document.getElementById('date-from').value;
         let toD = document.getElementById('date-to').value;
-        
         let filtered = h;
-        if(fromD && toD) {
-            filtered = h.filter(i => {
-                let d = new Date(i.time).toISOString().split('T')[0];
-                return d >= fromD && d <= toD;
-            });
-        }
+        if(fromD && toD) { filtered = h.filter(i => { let d = new Date(i.time).toISOString().split('T')[0]; return d >= fromD && d <= toD; }); }
 
         document.getElementById('history-list').innerHTML = filtered.slice().reverse().map(i => `
             <div class="history-item">
@@ -226,15 +220,11 @@
         h.forEach(i => csv += `${i.rid},${new Date(i.time).toLocaleDateString()},${i.from},${i.to},${i.d.toFixed(2)},${i.f}\n`);
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'AS4_Report.csv'; a.click();
-    }
-
-    async function share() {
-        const canvas = await html2canvas(document.getElementById('receipt-render'));
-        canvas.toBlob(b => {
-            const f = new File([b], 'receipt.png', {type:'image/png'});
-            if(navigator.share) navigator.share({files:[f]});
-        });
+        const a = document.createElement('a'); 
+        a.href = url; 
+        let d = new Date().toISOString().split('T')[0];
+        a.download = `Report_${d}.csv`; // CSV rename based on date
+        a.click();
     }
 
     async function downloadPDF() {
@@ -242,7 +232,15 @@
         const canvas = await html2canvas(document.getElementById('receipt-render'));
         const pdf = new jsPDF('p', 'mm', [80, 150]);
         pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 80, 150);
-        pdf.save("Receipt.pdf");
+        pdf.save(`${currentRID}.pdf`); // PDF rename based on Receipt Number
+    }
+
+    async function share() {
+        const canvas = await html2canvas(document.getElementById('receipt-render'));
+        canvas.toBlob(b => {
+            const f = new File([b], `${currentRID}.png`, {type:'image/png'});
+            if(navigator.share) navigator.share({files:[f]});
+        });
     }
 
     window.onload = updateUI;
