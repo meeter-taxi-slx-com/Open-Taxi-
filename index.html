@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AS4 TAXI - Ultra Pro v13</title>
+    <title>AS4 TAXI - Ultra Pro v14</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -36,14 +36,16 @@
         .stat-box { background: var(--gray); padding: 10px; border-radius: 15px; text-align: center; font-size: 11px; color: #7f8c8d; }
         .stat-box b { display: block; color: var(--primary); font-size: 14px; margin-top: 2px; }
 
+        /* FIXED MODAL STYLE FOR CENTER ALIGN */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
-        .modal-content { background: white; width: 90%; max-width: 380px; border-radius: 25px; padding: 25px; position: relative; }
+        .modal-content { background: white; width: 85%; max-width: 360px; border-radius: 25px; padding: 30px 20px; position: relative; margin: auto; }
+        
         #receipt-render { background: white; padding: 15px; border-radius: 15px; border: 1px solid #eee; }
         .r-header { background: black; color: white; padding: 8px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 10px; }
         .r-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f9f9f9; font-size: 12px; }
         .r-total-box { background: var(--primary); color: white; text-align: center; padding: 12px; border-radius: 8px; font-size: 18px; font-weight: bold; margin: 10px 0; }
         .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .close-btn { position: absolute; top: -10px; right: -10px; background: var(--accent); color: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .close-btn { position: absolute; top: 10px; right: 10px; background: var(--accent); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; z-index: 1001; }
 
         .section-card { display: none; }
         .history-item { border-bottom: 1px solid #eee; padding: 10px 0; font-size: 11px; }
@@ -86,12 +88,12 @@
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <div class="close-btn" onclick="toggleSection('settings-modal')">X</div>
-            <h3 style="color:var(--primary); text-align:center; margin-bottom:15px;">Fare Settings</h3>
-            <label style="font-size:12px; font-weight:bold; color:var(--dark);">1st KM Fare (Base Rate):</label>
+            <h3 style="color:var(--primary); text-align:center; margin-top:10px;">Fare Settings</h3>
+            <label style="font-size:12px; font-weight:bold;">1st KM Fare (Base Rate):</label>
             <input type="number" id="set-base" placeholder="Ex: 100">
-            <label style="font-size:12px; font-weight:bold; color:var(--dark); margin-top:10px; display:block;">Next KM Rate:</label>
+            <label style="font-size:12px; font-weight:bold; margin-top:10px; display:block;">Next KM Rate:</label>
             <input type="number" id="set-rate" placeholder="Ex: 80">
-            <button style="background:var(--secondary); width:100%; margin-top:20px; font-size:15px;" onclick="saveSettings()">SAVE SETTINGS</button>
+            <button style="background:var(--secondary); width:100%; margin-top:15px;" onclick="saveSettings()">SAVE SETTINGS</button>
         </div>
     </div>
 
@@ -109,10 +111,6 @@
 
     <div id="history-section" class="section-card chart-container">
         <div style="font-weight:bold; font-size:14px; margin-bottom:5px;">Travel History</div>
-        <div style="display:flex; gap:5px; margin-bottom:10px;">
-            <input type="date" id="date-from" style="padding:5px; font-size:10px;"><input type="date" id="date-to" style="padding:5px; font-size:10px;">
-            <button onclick="updateUI()" style="background:var(--primary); padding:5px; width:auto; font-size:10px;">Filter</button>
-        </div>
         <div id="history-list" style="max-height:200px; overflow-y:auto;"></div>
     </div>
 </div>
@@ -151,6 +149,7 @@
         localStorage.setItem('as4_settings', JSON.stringify({base: BASE, rate: RATE}));
         document.getElementById('disp-rate-info').innerText = "Rs. " + RATE;
         toggleSection('settings-modal');
+        updateUI();
     }
 
     function startRide() {
@@ -178,7 +177,7 @@
     }
 
     function genReceiptID() {
-        let h = JSON.parse(localStorage.getItem('as4_v13_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v14_data') || '[]');
         let d = new Date();
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         return `${d.getDate()}${monthNames[d.getMonth()]}-AS4-${(h.length + 1).toString().padStart(5, '0')}`;
@@ -199,19 +198,24 @@
     }
 
     function saveRide(f, d, from, to, rid) {
-        let h = JSON.parse(localStorage.getItem('as4_v13_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v14_data') || '[]');
         h.push({f, d, from, to, rid, time: new Date().getTime()});
-        localStorage.setItem('as4_v13_data', JSON.stringify(h));
+        localStorage.setItem('as4_v14_data', JSON.stringify(h));
         updateUI();
     }
 
-    function toggleSection(id) { let s = document.getElementById(id); s.style.display = s.style.display === "block" ? "none" : "block"; }
+    function toggleSection(id) { 
+        let s = document.getElementById(id); 
+        s.style.display = (s.style.display === "flex" || s.style.display === "block") ? "none" : (id.includes('modal') ? "flex" : "block"); 
+    }
+    
     function closeModal() { document.getElementById('receiptModal').style.display = "none"; }
 
     function updateUI() {
-        let h = JSON.parse(localStorage.getItem('as4_v13_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v14_data') || '[]');
         let tVal = h.filter(i => new Date(i.time).toDateString() === new Date().toDateString()).reduce((a, b) => a + b.f, 0);
-        document.getElementById('stat-today').innerText = "Rs. " + tVal; document.getElementById('stat-today-main').innerText = tVal;
+        document.getElementById('stat-today').innerText = "Rs. " + tVal; 
+        document.getElementById('stat-today-main').innerText = tVal;
         document.getElementById('stat-month').innerText = "Rs. " + h.reduce((a, b) => a + b.f, 0);
         
         let dayData = [0,0,0,0,0,0,0]; h.forEach(i => { let d = new Date(i.time).getDay(); dayData[d === 0 ? 6 : d-1] += i.f; });
@@ -222,7 +226,7 @@
     }
 
     function downloadCSV() {
-        let h = JSON.parse(localStorage.getItem('as4_v13_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v14_data') || '[]');
         let csv = "ID,Date,KM,Fare\n"; h.forEach(i => csv += `${i.rid},${new Date(i.time).toLocaleDateString()},${i.d.toFixed(2)},${i.f}\n`);
         const a = document.createElement('a'); a.href = window.URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `Report_${new Date().toISOString().split('T')[0]}.csv`; a.click();
     }
