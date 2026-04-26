@@ -1,76 +1,107 @@
-
 <!DOCTYPE html>
 <html lang="si">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AS4 TAXI - Live Meter</title>
+    <title>AS4 TAXI - Professional Hire Meter</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { --primary: #001f3f; --secondary: #27ae60; --accent: #c0392b; --gray: #95a5a6; }
         body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; margin: 0; padding: 15px; display: flex; justify-content: center; }
         .card { background: white; padding: 20px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        
         .logo-header { background: #000; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
         .header-title { color: white; font-size: 24px; font-weight: bold; margin-top: 10px; display: block; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; margin: 8px 0; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; color: white; }
+
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 14px; }
+        
+        button { width: 100%; padding: 15px; margin: 8px 0; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; transition: 0.3s; }
         .btn-start { background: var(--secondary); }
         .btn-end { background: var(--accent); }
-        
-        /* LIVE AREA */
+        .btn-report { background: #34495e; }
+
+        /* LIVE STATS AREA */
         #live-stats { display: none; margin: 15px 0; text-align: center; background: #fff3f3; padding: 15px; border-radius: 15px; border: 1px solid #ffc1c1; }
-        #live-timer { font-size: 22px; font-weight: bold; color: var(--accent); }
-        #live-distance { font-size: 24px; font-weight: bold; color: var(--primary); margin-top: 10px; }
-        
+        #live-timer { font-size: 20px; font-weight: bold; color: var(--accent); }
+        #live-distance { font-size: 22px; font-weight: bold; color: var(--primary); margin-top: 8px; }
+
         #receipt-area { display: none; margin-top: 20px; padding: 20px; border: 2px solid var(--primary); border-radius: 15px; background: #fff; }
+        .r-header { text-align: center; background: #000; padding: 10px; border-radius: 10px; margin-bottom: 15px; }
+        .r-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; padding: 8px 0; font-size: 14px; }
         .r-total { background: var(--primary); color: white; padding: 15px; text-align: center; border-radius: 10px; font-size: 22px; font-weight: bold; margin-top: 15px; }
+
+        #report-display { display: none; margin-top: 15px; padding: 15px; background: #fff; border-radius: 15px; border: 1px solid #ddd; }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .stat-item { background: #f9f9f9; padding: 8px; border-radius: 10px; text-align: center; border: 1px solid #eee; font-size: 11px; }
+        .stat-item b { display: block; font-size: 13px; color: var(--primary); }
+        
+        #history-list { margin-top: 10px; max-height: 250px; overflow-y: auto; font-size: 11px; border-top: 1px solid #eee; }
+        .h-item { border-bottom: 1px solid #eee; padding: 8px 0; }
+        .h-route { color: var(--primary); font-weight: bold; }
     </style>
 </head>
 <body>
+
 <div class="card">
     <div class="logo-header">
         <span class="header-title">AS4 TAXI</span>
     </div>
+
     <input type="tel" id="cust-mobile" placeholder="Customer Mobile">
-    <input id="start-loc" placeholder="Start Town">
-    <input id="end-loc" placeholder="End Town">
-    
+    <input id="start-loc" placeholder="Start Town / Location">
+    <input id="end-loc" placeholder="End Town / Location">
+
     <div id="live-stats">
-        <div id="live-timer">Time: 00:00:00</div>
+        <div id="live-timer">Ride Time: 00:00:00</div>
         <div id="live-distance">Distance: 0.00 km</div>
     </div>
 
     <button class="btn-start" id="startBtn" onclick="startRide()">START RIDE</button>
     <button class="btn-end" onclick="endRide()">END RIDE</button>
     <button style="background:var(--gray)" onclick="location.reload()">NEW RIDE</button>
+    <button class="btn-report" onclick="toggleReports()">INCOME REPORTS & ANALYSIS</button>
+
+    <div id="report-display">
+        <div class="stat-grid">
+            <div class="stat-item">Total Trips<b id="total-trips">0</b></div>
+            <div class="stat-item">Total Income<b id="total-income">Rs. 0</b></div>
+        </div>
+        <div id="history-list"></div>
+    </div>
 
     <div id="receipt-area">
-        <div id="r-route" style="font-weight:bold; text-align:center; margin-bottom:10px;"></div>
-        <div style="display:flex; justify-content:space-between;"><span>Distance:</span><span id="r-dist"></span></div>
+        <div class="r-header"><h3 style="color:white; margin:0;">AS4 TAXI</h3></div>
+        <div class="r-row"><span>Date:</span> <span id="r-datetime"></span></div>
+        <div class="r-row"><span>Route:</span> <span id="r-route"></span></div>
+        <div class="r-row"><span>Distance:</span> <span id="r-dist"></span></div>
         <div class="r-total" id="r-total"></div>
         <button style="background:#25d366; margin-top:15px;" onclick="shareReceipt()">SHARE TO WHATSAPP</button>
     </div>
 </div>
 
 <script>
-    let sTime, sLat, sLon, timerInterval, watchID, totalDist = 0;
+    let sTime, sLat, sLon, timerInterval, watchID, currentDist = 0;
 
     function startRide() {
         if (navigator.geolocation) {
             sTime = new Date();
             document.getElementById('startBtn').innerText = "RIDE ACTIVE ✅";
+            document.getElementById('startBtn').disabled = true;
             document.getElementById('live-stats').style.display = "block";
+            
             timerInterval = setInterval(updateTimer, 1000);
 
+            // මුල්ම පිහිටීම ලබා ගැනීම
             navigator.geolocation.getCurrentPosition(p => {
-                sLat = p.coords.latitude; sLon = p.coords.longitude;
+                sLat = p.coords.latitude; 
+                sLon = p.coords.longitude;
+                
+                // දිගටම යන දුර මැනීම (Live Watch)
+                watchID = navigator.geolocation.watchPosition(position => {
+                    currentDist = calculateDistance(sLat, sLon, position.coords.latitude, position.coords.longitude);
+                    document.getElementById('live-distance').innerText = `Distance: ${currentDist.toFixed(2)} km`;
+                }, null, { enableHighAccuracy: true });
             });
-
-            // මේක තමයි ලයිව් දුර මනින කොටස
-            watchID = navigator.geolocation.watchPosition(p => {
-                totalDist = calculateDistance(sLat, sLon, p.coords.latitude, p.coords.longitude);
-                document.getElementById('live-distance').innerText = `Distance: ${totalDist.toFixed(2)} km`;
-            }, null, { enableHighAccuracy: true });
         }
     }
 
@@ -79,7 +110,7 @@
         let hrs = Math.floor(diff / 3600).toString().padStart(2, '0');
         let mins = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
         let secs = (diff % 60).toString().padStart(2, '0');
-        document.getElementById('live-timer').innerText = `Time: ${hrs}:${mins}:${secs}`;
+        document.getElementById('live-timer').innerText = `Ride Time: ${hrs}:${mins}:${secs}`;
     }
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -91,20 +122,50 @@
     }
 
     function endRide() {
+        if (!sTime) return;
         clearInterval(timerInterval);
         navigator.geolocation.clearWatch(watchID);
-        let fare = Math.round(100 + (Math.max(0, totalDist - 1) * 80));
-        document.getElementById('r-dist').innerText = totalDist.toFixed(2) + " km";
-        document.getElementById('r-total').innerText = "Rs. " + fare;
-        document.getElementById('r-route').innerText = document.getElementById('start-loc').value + " to " + document.getElementById('end-loc').value;
+
+        let eTime = new Date();
+        let fare = Math.round(100 + (Math.max(0, currentDist - 1) * 80));
+        let from = document.getElementById('start-loc').value || "Start";
+        let to = document.getElementById('end-loc').value || "End";
+
+        document.getElementById('r-datetime').innerText = eTime.toLocaleString();
+        document.getElementById('r-route').innerText = from + " to " + to;
+        document.getElementById('r-dist').innerText = currentDist.toFixed(2) + " km";
+        document.getElementById('r-total').innerText = "Total: Rs. " + fare;
         document.getElementById('receipt-area').style.display = "block";
         document.getElementById('live-stats').style.display = "none";
+
+        saveData(fare, currentDist, eTime, from, to);
+    }
+
+    function saveData(fare, dist, date, from, to) {
+        let history = JSON.parse(localStorage.getItem('as4_data') || "[]");
+        history.push({ fare, dist, date: date.toLocaleString(), from, to });
+        localStorage.setItem('as4_data', JSON.stringify(history));
+    }
+
+    function toggleReports() {
+        let div = document.getElementById('report-display');
+        div.style.display = (div.style.display === 'block') ? 'none' : 'block';
+        let history = JSON.parse(localStorage.getItem('as4_data') || "[]");
+        let totalInc = history.reduce((sum, r) => sum + r.fare, 0);
+        document.getElementById('total-trips').innerText = history.length;
+        document.getElementById('total-income').innerText = "Rs. " + totalInc;
+        
+        let html = "";
+        history.slice().reverse().forEach(r => {
+            html += `<div class="h-item"><span class="h-route">${r.from} ➔ ${r.to}</span><br>${r.date} - ${r.dist.toFixed(2)}km - Rs.${r.fare}</div>`;
+        });
+        document.getElementById('history-list').innerHTML = html;
     }
 
     async function shareReceipt() {
         const canvas = await html2canvas(document.getElementById('receipt-area'));
         canvas.toBlob(blob => {
-            const file = new File([blob], 'Receipt.png', { type: 'image/png' });
+            const file = new File([blob], 'AS4_Receipt.png', { type: 'image/png' });
             if (navigator.share) navigator.share({ files: [file] });
         });
     }
