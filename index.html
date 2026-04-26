@@ -6,144 +6,132 @@
     <title>AS4 TAXI - Professional Hire Meter</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        :root { --primary: #001f3f; --secondary: #27ae60; --accent: #c0392b; --gray: #95a5a6; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; margin: 0; padding: 15px; display: flex; justify-content: center; }
-        .card { background: white; padding: 20px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        .logo-header { background: #000; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
-        .header-title { color: white; font-size: 24px; font-weight: bold; margin-top: 10px; display: block; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 14px; }
-        button { width: 100%; padding: 15px; margin: 8px 0; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; }
-        .btn-start { background: var(--secondary); }
-        .btn-end { background: var(--accent); }
-        .btn-report { background: #34495e; }
-        #live-stats { display: none; margin: 15px 0; text-align: center; background: #fff3f3; padding: 15px; border-radius: 15px; border: 1px solid #ffc1c1; }
-        #live-timer { font-size: 20px; font-weight: bold; color: var(--accent); }
-        #live-distance { font-size: 22px; font-weight: bold; color: var(--primary); margin-top: 8px; }
-        #receipt-area { display: none; margin-top: 20px; padding: 20px; border: 2px solid var(--primary); border-radius: 15px; background: #fff; }
-        .r-header { text-align: center; background: #000; padding: 10px; border-radius: 10px; margin-bottom: 15px; }
-        .r-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; padding: 8px 0; font-size: 14px; }
-        .r-total { background: var(--primary); color: white; padding: 15px; text-align: center; border-radius: 10px; font-size: 22px; font-weight: bold; margin-top: 15px; }
-        #report-display { display: none; margin-top: 15px; padding: 15px; background: #fff; border-radius: 15px; border: 1px solid #ddd; }
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-        .stat-item { background: #f9f9f9; padding: 8px; border-radius: 10px; text-align: center; border: 1px solid #eee; font-size: 11px; }
-        .stat-item b { display: block; font-size: 13px; color: var(--primary); }
-        #history-list { margin-top: 10px; max-height: 250px; overflow-y: auto; font-size: 11px; border-top: 1px solid #eee; }
-        .h-item { border-bottom: 1px solid #eee; padding: 8px 0; }
-        .h-route { color: var(--primary); font-weight: bold; }
+        :root { --primary: #1a4a9e; --secondary: #2ecc71; --accent: #e74c3c; --bg: #f8f9fa; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eee; margin: 0; padding: 10px; display: flex; justify-content: center; }
+        .app-container { background: white; width: 100%; max-width: 400px; border-radius: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 20px; position: relative; }
+        .header-box { text-align: center; margin-bottom: 20px; }
+        .logo-circle { background: #1a4a9e; color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-weight: bold; border: 4px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); font-size: 20px; }
+        .brand-name { color: #1a4a9e; font-size: 22px; font-weight: 900; letter-spacing: 1px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 12px; font-size: 15px; box-sizing: border-box; background: #fff; }
+        button { width: 100%; padding: 15px; margin: 8px 0; border: none; border-radius: 15px; font-size: 16px; font-weight: bold; color: white; cursor: pointer; }
+        .btn-start { background: #2ecc71; }
+        .btn-end { background: #e74c3c; }
+        .btn-new { background: #95a5a6; }
+        #live-meter { display: none; text-align: center; margin: 15px 0; padding: 15px; background: #fdf2f2; border: 1px solid #fadbd8; border-radius: 15px; }
+        .live-time { font-size: 18px; color: #e74c3c; font-weight: bold; }
+        .live-dist { font-size: 24px; color: #1a4a9e; font-weight: 900; margin-top: 5px; }
+        .revenue-section { margin-top: 20px; border: 1px solid #ddd; border-radius: 20px; padding: 15px; }
+        .rev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .rev-card { background: #f8f9fa; padding: 10px; border-radius: 10px; text-align: center; border: 1px solid #eee; font-size: 12px; }
+        #receipt-area { display: none; margin-top: 20px; border: 1px solid #1a4a9e; border-radius: 15px; padding: 15px; background: white; }
     </style>
 </head>
 <body>
-<div class="card">
-    <div class="logo-header"><span class="header-title">AS4 TAXI</span></div>
-    <input type="tel" id="cust-mobile" placeholder="Customer Mobile">
-    <input id="start-loc" placeholder="Start Town">
-    <input id="end-loc" placeholder="End Town">
-    <div id="live-stats">
-        <div id="live-timer">Ride Time: 00:00:00</div>
-        <div id="live-distance">Distance: 0.00 km</div>
-    </div>
+
+<div class="app-container">
+    <div class="header-box"><div class="logo-circle">AS4</div><div class="brand-name">AS4 TAXI</div></div>
+    <input type="tel" id="mobile" placeholder="Customer Mobile (Optional)">
+    <input list="wp-towns" id="start-loc" placeholder="Start Town / Location">
+    <input list="wp-towns" id="end-loc" placeholder="End Town / Location">
+
+    <datalist id="wp-towns">
+        <option value="Colombo Fort"><option value="Pettah"><option value="Kollupitiya"><option value="Bambalapitiya">
+        <option value="Havelock Town"><option value="Wellawatte"><option value="Cinnamon Gardens"><option value="Borella">
+        <option value="Dematagoda"><option value="Maradana"><option value="Kotahena"><option value="Grandpass">
+        <option value="Nugegoda"><option value="Maharagama"><option value="Kottawa"><option value="Pannipitiya">
+        <option value="Homagama"><option value="Kaduwela"><option value="Malabe"><option value="Battaramulla">
+        <option value="Rajagiriya"><option value="Dehiwala"><option value="Mount Lavinia"><option value="Ratmalana">
+        <option value="Moratuwa"><option value="Piliyandala"><option value="Boralesgamuwa"><option value="Athurugiriya">
+        <option value="Talawatugoda"><option value="Padukka"><option value="Hanwella"><option value="Avissawella">
+        <option value="Gampaha"><option value="Negombo"><option value="Katunayake"><option value="Ja-Ela">
+        <option value="Kandana"><option value="Wattala"><option value="Kiribathgoda"><option value="Kadawatha">
+        <option value="Ragama"><option value="Kelaniya"><option value="Biyagama"><option value="Ganemulla">
+        <option value="Veyangoda"><option value="Nittambuwa"><option value="Warakapola"><option value="Minuwangoda">
+        <option value="Divulapitiya"><option value="Mirigama"><option value="Kirindiwela">
+        <option value="Kalutara"><option value="Panadura"><option value="Horana"><option value="Beruwala">
+        <option value="Aluthgama"><option value="Matugama"><option value="Wadduwa"><option value="Bandaragama">
+        <option value="Ingiriya"><option value="Bulathsinhala"><option value="Agalawatte"><option value="Dharga Town">
+    </datalist>
+
+    <div id="live-meter"><div class="live-time" id="timer">Ride Time: 00:00:00</div><div class="live-dist" id="distance">0.00 km</div></div>
     <button class="btn-start" id="startBtn" onclick="startRide()">START RIDE</button>
     <button class="btn-end" onclick="endRide()">END RIDE</button>
-    <button style="background:var(--gray)" onclick="location.reload()">NEW RIDE</button>
-    <button class="btn-report" onclick="toggleReports()">INCOME REPORTS & ANALYSIS</button>
-    <div id="report-display">
-        <div class="stat-grid">
-            <div class="stat-item">Total Trips<b id="total-trips">0</b></div>
-            <div class="stat-item">Total Income<b id="total-income">Rs. 0</b></div>
+    <button class="btn-new" onclick="location.reload()">NEW RIDE</button>
+
+    <div class="revenue-section">
+        <div class="rev-grid">
+            <div class="rev-card">Today<br><b id="today-inc">Rs. 0</b></div>
+            <div class="rev-card">This Month<br><b id="month-inc">Rs. 0</b></div>
+            <div class="rev-card">Short Runs<br><b id="short-runs">0</b></div>
+            <div class="rev-card">Long Runs<br><b id="long-runs">0</b></div>
         </div>
-        <div id="history-list"></div>
     </div>
+
     <div id="receipt-area">
-        <div class="r-header"><h3 style="color:white; margin:0;">AS4 TAXI</h3></div>
-        <div class="r-row"><span>Date:</span> <span id="r-datetime"></span></div>
-        <div class="r-row"><span>Route:</span> <span id="r-route"></span></div>
-        <div class="r-row"><span>Distance:</span> <span id="r-dist"></span></div>
-        <div class="r-total" id="r-total"></div>
-        <button style="background:#25d366; margin-top:15px;" onclick="shareReceipt()">SHARE TO WHATSAPP</button>
+        <div id="r-details" style="font-size: 13px; line-height: 1.8;"></div>
+        <div style="background:#1a4a9e; color:white; padding:10px; text-align:center; border-radius:10px; margin-top:10px; font-weight:bold;" id="r-total"></div>
+        <button style="background:#25d366; margin-top:10px;" onclick="share()">SHARE TO WHATSAPP</button>
     </div>
 </div>
-<script>
-    let sTime, lastLat, lastLon, timerInterval, watchID, totalDist = 0;
 
+<script>
+    let sTime, lastLat, lastLon, watchID, totalKm = 0, timerInt;
     function startRide() {
         if (navigator.geolocation) {
             sTime = new Date();
             document.getElementById('startBtn').innerText = "RIDE ACTIVE ✅";
-            document.getElementById('startBtn').disabled = true;
-            document.getElementById('live-stats').style.display = "block";
-            timerInterval = setInterval(updateTimer, 1000);
-
+            document.getElementById('live-meter').style.display = "block";
+            timerInt = setInterval(() => {
+                let diff = Math.floor((new Date() - sTime) / 1000);
+                document.getElementById('timer').innerText = "Ride Time: " + new Date(diff * 1000).toISOString().substr(11, 8);
+            }, 1000);
             navigator.geolocation.getCurrentPosition(p => {
-                lastLat = p.coords.latitude;
-                lastLon = p.coords.longitude;
-                
-                watchID = navigator.geolocation.watchPosition(position => {
-                    let d = calculateDistance(lastLat, lastLon, position.coords.latitude, position.coords.longitude);
-                    if (d > 0.002) { // මීටර් 2කට වඩා වැඩි නම් විතරක් එකතු කරන්න (GPS හොලවන එක නැවත්වීමට)
-                        totalDist += d;
-                        lastLat = position.coords.latitude;
-                        lastLon = position.coords.longitude;
-                    }
-                    document.getElementById('live-distance').innerText = `Distance: ${totalDist.toFixed(2)} km`;
-                }, null, { enableHighAccuracy: true, distanceFilter: 1 });
+                lastLat = p.coords.latitude; lastLon = p.coords.longitude;
+                watchID = navigator.geolocation.watchPosition(pos => {
+                    let d = calc(lastLat, lastLon, pos.coords.latitude, pos.coords.longitude);
+                    if (d > 0.005) { totalKm += d; lastLat = pos.coords.latitude; lastLon = pos.coords.longitude; }
+                    document.getElementById('distance').innerText = totalKm.toFixed(2) + " km";
+                }, null, { enableHighAccuracy: true });
             });
         }
     }
-
-    function updateTimer() {
-        let diff = Math.floor((new Date() - sTime) / 1000);
-        let hrs = Math.floor(diff / 3600).toString().padStart(2, '0');
-        let mins = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
-        let secs = (diff % 60).toString().padStart(2, '0');
-        document.getElementById('live-timer').innerText = `Ride Time: ${hrs}:${mins}:${secs}`;
-    }
-
-    function calculateDistance(lat1, lon1, lat2, lon2) {
+    function calc(lat1, lon1, lat2, lon2) {
         const R = 6371;
         const dLat = (lat2-lat1)*Math.PI/180;
         const dLon = (lon2-lon1)*Math.PI/180;
         const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
-
     function endRide() {
-        if (!sTime) return;
-        clearInterval(timerInterval);
+        clearInterval(timerInt);
         navigator.geolocation.clearWatch(watchID);
-        let fare = Math.round(100 + (Math.max(0, totalDist - 1) * 80));
-        document.getElementById('r-datetime').innerText = new Date().toLocaleString();
-        document.getElementById('r-route').innerText = (document.getElementById('start-loc').value || "Start") + " to " + (document.getElementById('end-loc').value || "End");
-        document.getElementById('r-dist').innerText = totalDist.toFixed(2) + " km";
-        document.getElementById('r-total').innerText = "Total: Rs. " + fare;
+        let fare = Math.round(100 + (Math.max(0, totalKm - 1) * 80));
+        document.getElementById('r-details').innerHTML = `Date: ${new Date().toLocaleString()}<br>Distance: ${totalKm.toFixed(2)} km`;
+        document.getElementById('r-total').innerText = "TOTAL: Rs. " + fare;
         document.getElementById('receipt-area').style.display = "block";
-        document.getElementById('live-stats').style.display = "none";
-        saveData(fare, totalDist, new Date().toLocaleString(), document.getElementById('start-loc').value, document.getElementById('end-loc').value);
+        document.getElementById('live-meter').style.display = "none";
+        updateRev(fare, totalKm);
     }
-
-    function saveData(fare, dist, date, from, to) {
-        let history = JSON.parse(localStorage.getItem('as4_data') || "[]");
-        history.push({ fare, dist, date, from, to });
-        localStorage.setItem('as4_data', JSON.stringify(history));
+    function updateRev(f, d) {
+        let data = JSON.parse(localStorage.getItem('as4_final') || '{"today":0,"month":0,"short":0,"long":0}');
+        data.today += f; data.month += f;
+        if(d < 5) data.short++; else data.long++;
+        localStorage.setItem('as4_final', JSON.stringify(data));
+        render();
     }
-
-    function toggleReports() {
-        let div = document.getElementById('report-display');
-        div.style.display = (div.style.display === 'block') ? 'none' : 'block';
-        let history = JSON.parse(localStorage.getItem('as4_data') || "[]");
-        document.getElementById('total-trips').innerText = history.length;
-        document.getElementById('total-income').innerText = "Rs. " + history.reduce((s, r) => s + r.fare, 0);
-        let html = "";
-        history.slice().reverse().forEach(r => {
-            html += `<div class="h-item"><span class="h-route">${r.from} ➔ ${r.to}</span><br>${r.date} - ${r.dist.toFixed(2)}km - Rs.${r.fare}</div>`;
-        });
-        document.getElementById('history-list').innerHTML = html;
+    function render() {
+        let data = JSON.parse(localStorage.getItem('as4_final') || '{"today":0,"month":0,"short":0,"long":0}');
+        document.getElementById('today-inc').innerText = "Rs. " + data.today;
+        document.getElementById('month-inc').innerText = "Rs. " + data.month;
+        document.getElementById('short-runs').innerText = data.short;
+        document.getElementById('long-runs').innerText = data.long;
     }
-
-    async function shareReceipt() {
+    render();
+    async function share() {
         const canvas = await html2canvas(document.getElementById('receipt-area'));
-        canvas.toBlob(blob => {
-            const file = new File([blob], 'Receipt.png', { type: 'image/png' });
-            if (navigator.share) navigator.share({ files: [file] });
+        canvas.toBlob(b => {
+            const f = new File([b], 'as4.png', {type:'image/png'});
+            if(navigator.share) navigator.share({files:[f]});
         });
     }
 </script>
