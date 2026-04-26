@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AS4 TAXI - Ultra Pro</title>
+    <title>AS4 TAXI - Ultra Pro v7</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -22,23 +22,23 @@
         .calc-val { font-weight: 800; color: var(--primary); display: block; font-size: 13px; }
 
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
-        button { border: none; border-radius: 12px; font-size: 14px; font-weight: bold; color: white; cursor: pointer; padding: 14px; }
+        button { border: none; border-radius: 12px; font-size: 14px; font-weight: bold; color: white; cursor: pointer; padding: 14px; transition: 0.2s; }
         .btn-start { background: linear-gradient(135deg, #2ecc71, #27ae60); }
         .btn-end { background: linear-gradient(135deg, #e74c3c, #c0392b); }
         .btn-new { background: #3498db; }
         .btn-report { background: #34495e; }
         
         /* Popup / Modal Style */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
         .modal-content { background: white; width: 90%; max-width: 380px; border-radius: 25px; padding: 20px; position: relative; }
         
         #receipt-render { background: white; padding: 15px; border-radius: 15px; border: 1px solid #eee; }
         .r-header { background: black; color: white; padding: 8px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 10px; }
-        .r-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f9f9f9; font-size: 13px; }
+        .r-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f9f9f9; font-size: 12px; }
         .r-total-box { background: var(--primary); color: white; text-align: center; padding: 12px; border-radius: 8px; font-size: 18px; font-weight: bold; margin: 10px 0; }
         
         .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .close-btn { position: absolute; top: -15px; right: -15px; background: white; color: black; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .close-btn { position: absolute; top: -10px; right: -10px; background: var(--accent); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; border: 2px solid white; }
 
         .section-card { background: #fff; border: 1px solid #eee; border-radius: 15px; padding: 15px; margin-top: 15px; }
         #report-section, #history-section { display: none; }
@@ -76,9 +76,9 @@
     </div>
 
     <div id="report-section" class="section-card">
-        <div style="font-weight:bold; font-size:14px; margin-bottom:10px; display:flex; justify-content:space-between;">
+        <div style="font-weight:bold; font-size:14px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
             <span>Earnings Summary</span>
-            <button onclick="downloadCSV()" style="padding:4px 8px; font-size:10px; background:var(--primary); width:auto;">CSV ⬇</button>
+            <button onclick="downloadCSV()" style="padding:5px 10px; font-size:10px; background:var(--primary); width:auto; border-radius:8px;">CSV Download ⬇</button>
         </div>
         <canvas id="earningsChart" height="150"></canvas>
         <div class="rev-grid">
@@ -89,9 +89,7 @@
     </div>
 
     <div id="history-section" class="section-card">
-        <input type="date" id="date-from"> <input type="date" id="date-to">
-        <button onclick="filterHistory()" style="background:var(--primary); padding:8px; margin-top:5px; width:100%;">Filter</button>
-        <div id="history-list" style="max-height:150px; overflow-y:auto; margin-top:10px;"></div>
+        <div id="history-list" style="max-height:150px; overflow-y:auto;"></div>
     </div>
 </div>
 
@@ -141,6 +139,14 @@
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
+    function genReceiptID() {
+        let h = JSON.parse(localStorage.getItem('as4_pro_v7') || '[]');
+        let count = (h.length + 1).toString().padStart(8, '0');
+        let d = new Date();
+        let monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        return `${d.getDate()}${monthNames[d.getMonth()]}-AS4-${count}`;
+    }
+
     function endRide() {
         if(!sTime) return;
         navigator.geolocation.clearWatch(watchID);
@@ -149,8 +155,10 @@
         let fare = manual ? parseInt(manual) : Math.round(BASE + (Math.max(0, totalKm - 1) * RATE));
         let from = document.getElementById('start-loc').value || "Current";
         let to = document.getElementById('end-loc').value || "Destination";
+        let rid = genReceiptID();
         
         document.getElementById('r-body').innerHTML = `
+            <div class="r-row"><span>Receipt ID:</span> <b>${rid}</b></div>
             <div class="r-row"><span>Date:</span> <b>${eTime.toLocaleDateString()}</b></div>
             <div class="r-row"><span>Route:</span> <b>${from} ➔ ${to}</b></div>
             <div class="r-row"><span>Distance:</span> <b>${totalKm.toFixed(2)} km</b></div>
@@ -158,36 +166,52 @@
         `;
         document.getElementById('r-total').innerText = "Total: Rs. " + fare;
         document.getElementById('qrcode').innerHTML = "";
-        new QRCode(document.getElementById("qrcode"), { text: "AS4-"+fare, width: 80, height: 80 });
+        new QRCode(document.getElementById("qrcode"), { text: rid, width: 80, height: 80 });
         
         document.getElementById('receiptModal').style.display = "flex";
-        saveRide(fare, totalKm, from, to);
+        saveRide(fare, totalKm, from, to, rid);
     }
 
-    function saveRide(f, d, from, to) {
-        let h = JSON.parse(localStorage.getItem('as4_pro_v6') || '[]');
-        h.push({f, d, from, to, time: new Date().getTime()});
-        localStorage.setItem('as4_pro_v6', JSON.stringify(h));
+    function saveRide(f, d, from, to, rid) {
+        let h = JSON.parse(localStorage.getItem('as4_pro_v7') || '[]');
+        h.push({f, d, from, to, rid, time: new Date().getTime()});
+        localStorage.setItem('as4_pro_v7', JSON.stringify(h));
         updateUI();
     }
 
     function closeModal() { document.getElementById('receiptModal').style.display = "none"; }
 
     async function share() {
-        const canvas = await html2canvas(document.getElementById('receipt-render'));
+        const canvas = await html2canvas(document.getElementById('receipt-render'), { scale: 2 });
         canvas.toBlob(b => {
-            const f = new File([b], 'receipt.png', {type:'image/png'});
-            if(navigator.share) navigator.share({files:[f]});
-        });
+            const f = new File([b], 'as4_receipt.png', {type:'image/png'});
+            if(navigator.share) navigator.share({files:[f]}).catch(e => console.log(e));
+        }, 'image/png');
     }
 
     async function downloadPDF() {
         const { jsPDF } = window.jspdf;
-        const canvas = await html2canvas(document.getElementById('receipt-render'));
+        const canvas = await html2canvas(document.getElementById('receipt-render'), { scale: 2 });
         const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        pdf.addImage(imgData, 'PNG', 10, 10, 100, 150);
+        const pdf = new jsPDF('p', 'mm', [80, 150]);
+        pdf.addImage(imgData, 'PNG', 0, 0, 80, 150);
         pdf.save("AS4_Receipt.pdf");
+    }
+
+    function downloadCSV() {
+        let h = JSON.parse(localStorage.getItem('as4_pro_v7') || '[]');
+        if(h.length === 0) return alert("No data to download!");
+        let csv = "ReceiptID,Date,From,To,Distance_KM,Fare_Rs\n";
+        h.forEach(i => {
+            csv += `${i.rid},${new Date(i.time).toLocaleDateString()},${i.from},${i.to},${i.d.toFixed(2)},${i.f}\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute("download", "AS4_Taxi_Reports.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
     function toggleReport() {
@@ -203,14 +227,16 @@
     }
 
     function filterHistory() {
-        let h = JSON.parse(localStorage.getItem('as4_pro_v6') || '[]');
-        document.getElementById('history-list').innerHTML = h.reverse().map(i => `
-            <div class="r-row"><span>${new Date(i.time).toLocaleDateString()} | ${i.from}➔${i.to}</span> <b>Rs. ${i.f}</b></div>
+        let h = JSON.parse(localStorage.getItem('as4_pro_v7') || '[]');
+        document.getElementById('history-list').innerHTML = h.slice().reverse().map(i => `
+            <div class="r-row" style="border-bottom:1px solid #eee; padding:8px 0;">
+                <span>${new Date(i.time).toLocaleDateString()} | ${i.rid}</span> <b>Rs. ${i.f}</b>
+            </div>
         `).join('');
     }
 
     function updateUI() {
-        let h = JSON.parse(localStorage.getItem('as4_pro_v6') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_pro_v7') || '[]');
         let today = h.filter(i => new Date(i.time).toDateString() === new Date().toDateString());
         document.getElementById('stat-today').innerText = "Rs. " + today.reduce((a, b) => a + b.f, 0);
         document.getElementById('stat-month').innerText = "Rs. " + h.reduce((a, b) => a + b.f, 0);
@@ -220,8 +246,8 @@
         if(window.mChart) window.mChart.destroy();
         window.mChart = new Chart(document.getElementById('earningsChart').getContext('2d'), {
             type: 'bar',
-            data: { labels: ['M','T','W','T','F','S','S'], datasets: [{ data: dayData, backgroundColor: '#1a4a9e' }] },
-            options: { plugins: { legend: { display: false } } }
+            data: { labels: ['M','T','W','T','F','S','S'], datasets: [{ data: dayData, backgroundColor: '#1a4a9e', borderRadius: 5 }] },
+            options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
         });
     }
     window.onload = updateUI;
