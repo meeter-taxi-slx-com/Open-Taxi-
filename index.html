@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AS4 TAXI - Ultra Pro v7</title>
+    <title>AS4 TAXI - Ultra Pro v8</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -28,13 +28,12 @@
         .btn-new { background: #3498db; }
         .btn-report { background: #34495e; }
         
-        /* Popup / Modal Style */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
         .modal-content { background: white; width: 90%; max-width: 380px; border-radius: 25px; padding: 20px; position: relative; }
         
         #receipt-render { background: white; padding: 15px; border-radius: 15px; border: 1px solid #eee; }
         .r-header { background: black; color: white; padding: 8px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 10px; }
-        .r-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f9f9f9; font-size: 12px; }
+        .r-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f9f9f9; font-size: 12px; overflow: hidden; }
         .r-total-box { background: var(--primary); color: white; text-align: center; padding: 12px; border-radius: 8px; font-size: 18px; font-weight: bold; margin: 10px 0; }
         
         .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
@@ -42,8 +41,7 @@
 
         .section-card { background: #fff; border: 1px solid #eee; border-radius: 15px; padding: 15px; margin-top: 15px; }
         #report-section, #history-section { display: none; }
-        .rev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .rev-card { background: var(--gray); padding: 10px; border-radius: 10px; text-align: center; border: 1px solid #eee; font-size: 13px; }
+        .history-item { border-bottom: 1px solid #eee; padding: 10px 0; font-size: 11px; }
     </style>
 </head>
 <body>
@@ -57,7 +55,9 @@
     <input type="number" id="manual-fare" placeholder="Manual Fare (Optional)">
 
     <datalist id="wp-towns">
-        <option value="Colombo Fort"><option value="Nugegoda"><option value="Maharagama"><option value="Kottawa"><option value="Pannipitiya"><option value="Gampaha"><option value="Negombo"><option value="Wattala"><option value="Kalutara"><option value="Panadura">
+        <option value="Colombo Fort"><option value="Pettah"><option value="Kollupitiya"><option value="Bambalapitiya"><option value="Wellawatte"><option value="Havelock Town"><option value="Cinnamon Gardens"><option value="Borella"><option value="Dematagoda"><option value="Maradana"><option value="Kotahena"><option value="Grandpass"><option value="Nugegoda"><option value="Maharagama"><option value="Kottawa"><option value="Pannipitiya"><option value="Homagama"><option value="Kaduwela"><option value="Malabe"><option value="Battaramulla"><option value="Rajagiriya"><option value="Dehiwala"><option value="Mount Lavinia"><option value="Ratmalana"><option value="Moratuwa"><option value="Piliyandala"><option value="Boralesgamuwa"><option value="Athurugiriya"><option value="Talawatugoda"><option value="Padukka"><option value="Hanwella"><option value="Avissawella"><option value="Godagama"><option value="Mulleriyawa"><option value="Kolonnawa"><option value="Angoda">
+        <option value="Gampaha"><option value="Negombo"><option value="Katunayake"><option value="Ja-Ela"><option value="Kandana"><option value="Wattala"><option value="Kiribathgoda"><option value="Kadawatha"><option value="Ragama"><option value="Kelaniya"><option value="Biyagama"><option value="Ganemulla"><option value="Veyangoda"><option value="Nittambuwa"><option value="Warakapola"><option value="Minuwangoda"><option value="Divulapitiya"><option value="Mirigama"><option value="Kirindiwela"><option value="Yakkala"><option value="Seeduwa">
+        <option value="Kalutara"><option value="Panadura"><option value="Horana"><option value="Beruwala"><option value="Aluthgama"><option value="Matugama"><option value="Wadduwa"><option value="Bandaragama"><option value="Ingiriya"><option value="Bulathsinhala"><option value="Agalawatte"><option value="Dharga Town"><option value="Dodangoda"><option value="Payagala">
     </datalist>
 
     <div class="fare-calc-box">
@@ -81,15 +81,7 @@
             <button onclick="downloadCSV()" style="padding:5px 10px; font-size:10px; background:var(--primary); width:auto; border-radius:8px;">CSV Download ⬇</button>
         </div>
         <canvas id="earningsChart" height="150"></canvas>
-        <div class="rev-grid">
-            <div class="rev-card">Today<br><b id="stat-today">Rs. 0</b></div>
-            <div class="rev-card">Month<br><b id="stat-month">Rs. 0</b></div>
-        </div>
-        <button onclick="toggleHistory()" style="width:100%; background:#7f8c8d; margin-top:10px; padding:8px;">FULL HISTORY</button>
-    </div>
-
-    <div id="history-section" class="section-card">
-        <div id="history-list" style="max-height:150px; overflow-y:auto;"></div>
+        <div id="history-list" style="max-height:150px; overflow-y:auto; margin-top:10px; border-top:1px solid #eee;"></div>
     </div>
 </div>
 
@@ -140,10 +132,10 @@
     }
 
     function genReceiptID() {
-        let h = JSON.parse(localStorage.getItem('as4_pro_v7') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_pro_v8') || '[]');
         let count = (h.length + 1).toString().padStart(8, '0');
         let d = new Date();
-        let monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         return `${d.getDate()}${monthNames[d.getMonth()]}-AS4-${count}`;
     }
 
@@ -173,9 +165,9 @@
     }
 
     function saveRide(f, d, from, to, rid) {
-        let h = JSON.parse(localStorage.getItem('as4_pro_v7') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_pro_v8') || '[]');
         h.push({f, d, from, to, rid, time: new Date().getTime()});
-        localStorage.setItem('as4_pro_v7', JSON.stringify(h));
+        localStorage.setItem('as4_pro_v8', JSON.stringify(h));
         updateUI();
     }
 
@@ -199,19 +191,15 @@
     }
 
     function downloadCSV() {
-        let h = JSON.parse(localStorage.getItem('as4_pro_v7') || '[]');
-        if(h.length === 0) return alert("No data to download!");
-        let csv = "ReceiptID,Date,From,To,Distance_KM,Fare_Rs\n";
-        h.forEach(i => {
-            csv += `${i.rid},${new Date(i.time).toLocaleDateString()},${i.from},${i.to},${i.d.toFixed(2)},${i.f}\n`;
-        });
+        let h = JSON.parse(localStorage.getItem('as4_pro_v8') || '[]');
+        if(h.length === 0) return alert("No data!");
+        let csv = "ReceiptID,Date,From,To,KM,Fare\n";
+        h.forEach(i => csv += `${i.rid},${new Date(i.time).toLocaleDateString()},"${i.from}","${i.to}",${i.d.toFixed(2)},${i.f}\n`);
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", "AS4_Taxi_Reports.csv");
-        document.body.appendChild(link);
+        link.download = "AS4_Taxi_Reports.csv";
         link.click();
-        document.body.removeChild(link);
     }
 
     function toggleReport() {
@@ -220,34 +208,23 @@
         if(rs.style.display === "block") updateUI();
     }
 
-    function toggleHistory() {
-        let hs = document.getElementById('history-section');
-        hs.style.display = hs.style.display === "block" ? "none" : "block";
-        filterHistory();
-    }
-
-    function filterHistory() {
-        let h = JSON.parse(localStorage.getItem('as4_pro_v7') || '[]');
+    function updateUI() {
+        let h = JSON.parse(localStorage.getItem('as4_pro_v8') || '[]');
         document.getElementById('history-list').innerHTML = h.slice().reverse().map(i => `
-            <div class="r-row" style="border-bottom:1px solid #eee; padding:8px 0;">
-                <span>${new Date(i.time).toLocaleDateString()} | ${i.rid}</span> <b>Rs. ${i.f}</b>
+            <div class="history-item">
+                <div style="display:flex; justify-content:space-between;"><b>${i.rid}</b> <span>${new Date(i.time).toLocaleDateString()}</span></div>
+                <div style="color:var(--primary); font-weight:bold;">${i.from} ➔ ${i.to}</div>
+                <div style="display:flex; justify-content:space-between; margin-top:3px;"><span>${i.d.toFixed(2)} km</span> <b>Rs. ${i.f}</b></div>
             </div>
         `).join('');
-    }
 
-    function updateUI() {
-        let h = JSON.parse(localStorage.getItem('as4_pro_v7') || '[]');
-        let today = h.filter(i => new Date(i.time).toDateString() === new Date().toDateString());
-        document.getElementById('stat-today').innerText = "Rs. " + today.reduce((a, b) => a + b.f, 0);
-        document.getElementById('stat-month').innerText = "Rs. " + h.reduce((a, b) => a + b.f, 0);
-        
         let dayData = [0,0,0,0,0,0,0];
         h.forEach(i => { let d = new Date(i.time).getDay(); dayData[d === 0 ? 6 : d-1] += i.f; });
         if(window.mChart) window.mChart.destroy();
         window.mChart = new Chart(document.getElementById('earningsChart').getContext('2d'), {
             type: 'bar',
-            data: { labels: ['M','T','W','T','F','S','S'], datasets: [{ data: dayData, backgroundColor: '#1a4a9e', borderRadius: 5 }] },
-            options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+            data: { labels: ['M','T','W','T','F','S','S'], datasets: [{ data: dayData, backgroundColor: '#1a4a9e' }] },
+            options: { plugins: { legend: { display: false } } }
         });
     }
     window.onload = updateUI;
