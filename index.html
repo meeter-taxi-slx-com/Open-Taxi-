@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AS4 TAXI - Ultra Professional Meter</title>
+    <title>AS4 TAXI - Ultra Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root { --primary: #1a4a9e; --secondary: #2ecc71; --accent: #e74c3c; --dark: #2c3e50; --gray: #f4f7f6; }
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 15px; display: flex; justify-content: center; }
@@ -16,32 +17,33 @@
         .brand-name { color: var(--primary); font-size: 22px; font-weight: 900; }
         
         input, select { width: 100%; padding: 12px; margin: 6px 0; border: 1px solid #e0e0e0; border-radius: 12px; font-size: 14px; box-sizing: border-box; background: var(--gray); }
-        
         .fare-calc-box { background: var(--gray); border-radius: 15px; padding: 12px; margin: 10px 0; border: 1px solid #eee; }
         .calc-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; text-align: center; font-size: 11px; }
         .calc-val { font-weight: 800; color: var(--primary); display: block; font-size: 13px; }
 
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
-        button { border: none; border-radius: 12px; font-size: 14px; font-weight: bold; color: white; cursor: pointer; padding: 14px; transition: 0.2s; }
+        button { border: none; border-radius: 12px; font-size: 14px; font-weight: bold; color: white; cursor: pointer; padding: 14px; }
         .btn-start { background: linear-gradient(135deg, #2ecc71, #27ae60); }
         .btn-end { background: linear-gradient(135deg, #e74c3c, #c0392b); }
         .btn-new { background: #3498db; }
         .btn-report { background: #34495e; }
-        button:active { transform: scale(0.98); }
         
-        .section-card { background: #fff; border: 1px solid #eee; border-radius: 15px; padding: 15px; margin-top: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
-        #report-section, #history-section { display: none; }
+        /* Popup / Modal Style */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
+        .modal-content { background: white; width: 90%; max-width: 380px; border-radius: 25px; padding: 20px; position: relative; }
         
-        .rev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .rev-card { background: var(--gray); padding: 10px; border-radius: 10px; text-align: center; border: 1px solid #eee; }
-        .rev-amt { font-size: 14px; font-weight: bold; color: var(--primary); }
-
-        .history-item { border-bottom: 1px solid #f0f0f0; padding: 8px 0; display: flex; justify-content: space-between; font-size: 12px; }
-
-        #receipt-area { display: none; background: white; border-radius: 20px; padding: 20px; border: 1px solid #ddd; margin-top: 10px; }
+        #receipt-render { background: white; padding: 15px; border-radius: 15px; border: 1px solid #eee; }
         .r-header { background: black; color: white; padding: 8px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 10px; }
         .r-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f9f9f9; font-size: 13px; }
         .r-total-box { background: var(--primary); color: white; text-align: center; padding: 12px; border-radius: 8px; font-size: 18px; font-weight: bold; margin: 10px 0; }
+        
+        .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .close-btn { position: absolute; top: -15px; right: -15px; background: white; color: black; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+
+        .section-card { background: #fff; border: 1px solid #eee; border-radius: 15px; padding: 15px; margin-top: 15px; }
+        #report-section, #history-section { display: none; }
+        .rev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .rev-card { background: var(--gray); padding: 10px; border-radius: 10px; text-align: center; border: 1px solid #eee; font-size: 13px; }
     </style>
 </head>
 <body>
@@ -52,25 +54,10 @@
     <input type="tel" id="mobile" placeholder="Customer Mobile (Optional)">
     <input list="wp-towns" id="start-loc" placeholder="Pick Up Location">
     <input list="wp-towns" id="end-loc" placeholder="Drop Off Location">
-    <input type="number" id="manual-fare" placeholder="Type Fare (Manual Mode - Optional)">
+    <input type="number" id="manual-fare" placeholder="Manual Fare (Optional)">
 
     <datalist id="wp-towns">
-        <option value="Colombo Fort"><option value="Pettah"><option value="Kollupitiya"><option value="Bambalapitiya">
-        <option value="Havelock Town"><option value="Wellawatte"><option value="Cinnamon Gardens"><option value="Borella">
-        <option value="Dematagoda"><option value="Maradana"><option value="Kotahena"><option value="Grandpass">
-        <option value="Nugegoda"><option value="Maharagama"><option value="Kottawa"><option value="Pannipitiya">
-        <option value="Homagama"><option value="Kaduwela"><option value="Malabe"><option value="Battaramulla">
-        <option value="Rajagiriya"><option value="Dehiwala"><option value="Mount Lavinia"><option value="Ratmalana">
-        <option value="Moratuwa"><option value="Piliyandala"><option value="Boralesgamuwa"><option value="Athurugiriya">
-        <option value="Talawatugoda"><option value="Padukka"><option value="Hanwella"><option value="Avissawella">
-        <option value="Gampaha"><option value="Negombo"><option value="Katunayake"><option value="Ja-Ela">
-        <option value="Kandana"><option value="Wattala"><option value="Kiribathgoda"><option value="Kadawatha">
-        <option value="Ragama"><option value="Kelaniya"><option value="Biyagama"><option value="Ganemulla">
-        <option value="Veyangoda"><option value="Nittambuwa"><option value="Warakapola"><option value="Minuwangoda">
-        <option value="Divulapitiya"><option value="Mirigama"><option value="Kirindiwela">
-        <option value="Kalutara"><option value="Panadura"><option value="Horana"><option value="Beruwala">
-        <option value="Aluthgama"><option value="Matugama"><option value="Wadduwa"><option value="Bandaragama">
-        <option value="Ingiriya"><option value="Bulathsinhala"><option value="Agalawatte"><option value="Dharga Town">
+        <option value="Colombo Fort"><option value="Nugegoda"><option value="Maharagama"><option value="Kottawa"><option value="Pannipitiya"><option value="Gampaha"><option value="Negombo"><option value="Wattala"><option value="Kalutara"><option value="Panadura">
     </datalist>
 
     <div class="fare-calc-box">
@@ -89,34 +76,38 @@
     </div>
 
     <div id="report-section" class="section-card">
-        <div style="font-weight:bold; font-size:14px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="font-weight:bold; font-size:14px; margin-bottom:10px; display:flex; justify-content:space-between;">
             <span>Earnings Summary</span>
-            <button onclick="downloadCSV()" style="padding:4px 10px; font-size:10px; background:var(--primary); width:auto;">CSV ⬇</button>
+            <button onclick="downloadCSV()" style="padding:4px 8px; font-size:10px; background:var(--primary); width:auto;">CSV ⬇</button>
         </div>
         <canvas id="earningsChart" height="150"></canvas>
         <div class="rev-grid">
-            <div class="rev-card"><span style="font-size:10px;">Today</span><br><span class="rev-amt" id="stat-today">Rs. 0</span></div>
-            <div class="rev-card"><span style="font-size:10px;">Month</span><br><span class="rev-amt" id="stat-month">Rs. 0</span></div>
+            <div class="rev-card">Today<br><b id="stat-today">Rs. 0</b></div>
+            <div class="rev-card">Month<br><b id="stat-month">Rs. 0</b></div>
         </div>
-        <button onclick="toggleHistory()" style="width:100%; background:#7f8c8d; margin-top:10px; padding:8px;">VIEW FULL HISTORY</button>
+        <button onclick="toggleHistory()" style="width:100%; background:#7f8c8d; margin-top:10px; padding:8px;">FULL HISTORY</button>
     </div>
 
     <div id="history-section" class="section-card">
-        <div style="font-weight:bold; margin-bottom:10px;">Travel History</div>
-        <div style="display:flex; gap:5px;">
-            <input type="date" id="date-from" style="font-size:10px; padding:5px;">
-            <input type="date" id="date-to" style="font-size:10px; padding:5px;">
-            <button onclick="filterHistory()" style="background:var(--primary); padding:5px; width:auto;">Filter</button>
-        </div>
-        <div id="history-list" style="max-height:200px; overflow-y:auto; margin-top:10px;"></div>
+        <input type="date" id="date-from"> <input type="date" id="date-to">
+        <button onclick="filterHistory()" style="background:var(--primary); padding:8px; margin-top:5px; width:100%;">Filter</button>
+        <div id="history-list" style="max-height:150px; overflow-y:auto; margin-top:10px;"></div>
     </div>
+</div>
 
-    <div id="receipt-area">
-        <div class="r-header">AS4 TAXI - RECEIPT</div>
-        <div id="r-body"></div>
-        <div class="r-total-box" id="r-total"></div>
-        <div id="qrcode" style="display:flex; justify-content:center; margin:10px;"></div>
-        <button style="background:#2ecc71; width:100%;" onclick="share()">SHARE TO WHATSAPP</button>
+<div id="receiptModal" class="modal">
+    <div class="modal-content">
+        <div class="close-btn" onclick="closeModal()">X</div>
+        <div id="receipt-render">
+            <div class="r-header">AS4 TAXI - RECEIPT</div>
+            <div id="r-body"></div>
+            <div class="r-total-box" id="r-total"></div>
+            <div id="qrcode" style="display:flex; justify-content:center; margin:10px;"></div>
+        </div>
+        <div class="modal-actions">
+            <button style="background:#2ecc71;" onclick="share()">WHATSAPP</button>
+            <button style="background:#e67e22;" onclick="downloadPDF()">SAVE PDF</button>
+        </div>
     </div>
 </div>
 
@@ -163,23 +154,40 @@
             <div class="r-row"><span>Date:</span> <b>${eTime.toLocaleDateString()}</b></div>
             <div class="r-row"><span>Route:</span> <b>${from} ➔ ${to}</b></div>
             <div class="r-row"><span>Distance:</span> <b>${totalKm.toFixed(2)} km</b></div>
-            <div class="r-row"><span>Start Time:</span> <b>${sTime.toLocaleTimeString()}</b></div>
-            <div class="r-row"><span>End Time:</span> <b>${eTime.toLocaleTimeString()}</b></div>
+            <div class="r-row"><span>Time:</span> <b>${sTime.toLocaleTimeString()} - ${eTime.toLocaleTimeString()}</b></div>
         `;
         document.getElementById('r-total').innerText = "Total: Rs. " + fare;
         document.getElementById('qrcode').innerHTML = "";
         new QRCode(document.getElementById("qrcode"), { text: "AS4-"+fare, width: 80, height: 80 });
         
-        document.getElementById('receipt-area').style.display = "block";
-        document.getElementById('report-section').style.display = "none";
+        document.getElementById('receiptModal').style.display = "flex";
         saveRide(fare, totalKm, from, to);
     }
 
     function saveRide(f, d, from, to) {
-        let h = JSON.parse(localStorage.getItem('as4_final_v5') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_pro_v6') || '[]');
         h.push({f, d, from, to, time: new Date().getTime()});
-        localStorage.setItem('as4_final_v5', JSON.stringify(h));
+        localStorage.setItem('as4_pro_v6', JSON.stringify(h));
         updateUI();
+    }
+
+    function closeModal() { document.getElementById('receiptModal').style.display = "none"; }
+
+    async function share() {
+        const canvas = await html2canvas(document.getElementById('receipt-render'));
+        canvas.toBlob(b => {
+            const f = new File([b], 'receipt.png', {type:'image/png'});
+            if(navigator.share) navigator.share({files:[f]});
+        });
+    }
+
+    async function downloadPDF() {
+        const { jsPDF } = window.jspdf;
+        const canvas = await html2canvas(document.getElementById('receipt-render'));
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        pdf.addImage(imgData, 'PNG', 10, 10, 100, 150);
+        pdf.save("AS4_Receipt.pdf");
     }
 
     function toggleReport() {
@@ -195,28 +203,14 @@
     }
 
     function filterHistory() {
-        let h = JSON.parse(localStorage.getItem('as4_final_v5') || '[]');
-        let fromD = document.getElementById('date-from').value;
-        let toD = document.getElementById('date-to').value;
-        let filtered = fromD && toD ? h.filter(i => {
-            let d = new Date(i.time).toISOString().split('T')[0];
-            return d >= fromD && d <= toD;
-        }) : h;
-        document.getElementById('history-list').innerHTML = filtered.slice().reverse().map(i => `
-            <div class="history-item"><span>${new Date(i.time).toLocaleDateString()} | ${i.from}➔${i.to}</span><b>Rs. ${i.f}</b></div>
+        let h = JSON.parse(localStorage.getItem('as4_pro_v6') || '[]');
+        document.getElementById('history-list').innerHTML = h.reverse().map(i => `
+            <div class="r-row"><span>${new Date(i.time).toLocaleDateString()} | ${i.from}➔${i.to}</span> <b>Rs. ${i.f}</b></div>
         `).join('');
     }
 
-    function downloadCSV() {
-        let h = JSON.parse(localStorage.getItem('as4_final_v5') || '[]');
-        let csv = "Date,From,To,Distance_KM,Fare_Rs\n";
-        h.forEach(i => csv += `${new Date(i.time).toLocaleDateString()},${i.from},${i.to},${i.d.toFixed(2)},${i.f}\n`);
-        let blob = new Blob([csv], { type: 'text/csv' });
-        let a = document.createElement('a'); a.href = window.URL.createObjectURL(blob); a.download = 'AS4_Taxi_Report.csv'; a.click();
-    }
-
     function updateUI() {
-        let h = JSON.parse(localStorage.getItem('as4_final_v5') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_pro_v6') || '[]');
         let today = h.filter(i => new Date(i.time).toDateString() === new Date().toDateString());
         document.getElementById('stat-today').innerText = "Rs. " + today.reduce((a, b) => a + b.f, 0);
         document.getElementById('stat-month').innerText = "Rs. " + h.reduce((a, b) => a + b.f, 0);
@@ -226,16 +220,8 @@
         if(window.mChart) window.mChart.destroy();
         window.mChart = new Chart(document.getElementById('earningsChart').getContext('2d'), {
             type: 'bar',
-            data: { labels: ['M','T','W','T','F','S','S'], datasets: [{ data: dayData, backgroundColor: '#1a4a9e', borderRadius: 4 }] },
-            options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-        });
-    }
-
-    async function share() {
-        const canvas = await html2canvas(document.getElementById('receipt-area'));
-        canvas.toBlob(b => {
-            const f = new File([b], 'as4_receipt.png', {type:'image/png'});
-            if(navigator.share) navigator.share({files:[f]});
+            data: { labels: ['M','T','W','T','F','S','S'], datasets: [{ data: dayData, backgroundColor: '#1a4a9e' }] },
+            options: { plugins: { legend: { display: false } } }
         });
     }
     window.onload = updateUI;
