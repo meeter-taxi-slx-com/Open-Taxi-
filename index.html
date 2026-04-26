@@ -3,108 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AS4 TAXI - Professional Hire Meter</title>
+    <title>AS4 TAXI - Premium Meter App</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        :root { --primary: #1a4a9e; --secondary: #2ecc71; --accent: #e74c3c; }
-        body { font-family: 'Segoe UI', sans-serif; background: #eee; margin: 0; padding: 10px; display: flex; justify-content: center; }
-        .app-container { background: white; width: 100%; max-width: 400px; border-radius: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 20px; }
-        .header-box { text-align: center; margin-bottom: 20px; }
-        .logo-circle { background: #1a4a9e; color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-weight: bold; border: 4px solid #fff; font-size: 20px; }
-        .brand-name { color: #1a4a9e; font-size: 22px; font-weight: 900; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 12px; font-size: 15px; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; margin: 8px 0; border: none; border-radius: 15px; font-size: 16px; font-weight: bold; color: white; cursor: pointer; }
-        .btn-start { background: #2ecc71; } .btn-end { background: #e74c3c; } .btn-new { background: #95a5a6; } .btn-report { background: #34495e; }
-        #live-meter { display: none; text-align: center; margin: 15px 0; padding: 15px; background: #fdf2f2; border-radius: 15px; border: 1px solid #fadbd8; }
-        .revenue-section { margin: 20px 0; border: 1px solid #ddd; border-radius: 20px; padding: 15px; }
-        .rev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .rev-card { background: #f8f9fa; padding: 10px; border-radius: 10px; text-align: center; border: 1px solid #eee; font-size: 12px; }
-        #receipt-area { display: none; margin-top: 20px; border: 2px solid #1a4a9e; border-radius: 15px; padding: 15px; background: white; }
-        #history-area { display: none; margin-top: 15px; padding: 10px; border-top: 1px solid #ddd; max-height: 200px; overflow-y: auto; font-size: 12px; }
-        .r-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; padding: 8px 0; font-size: 13px; }
+        :root { --primary: #1a4a9e; --secondary: #2ecc71; --accent: #e74c3c; --dark: #2c3e50; --gray: #f4f7f6; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; margin: 0; padding: 15px; display: flex; justify-content: center; }
+        .app-container { background: white; width: 100%; max-width: 420px; border-radius: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); padding: 25px; overflow: hidden; }
+        .logo-section { text-align: center; margin-bottom: 20px; }
+        .logo-circle { background: var(--primary); color: white; width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-weight: bold; border: 5px solid #fff; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .brand-name { color: var(--primary); font-size: 26px; font-weight: 900; letter-spacing: 1px; }
+        
+        input { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #e0e0e0; border-radius: 12px; font-size: 15px; box-sizing: border-box; background: var(--gray); transition: 0.3s; }
+        input:focus { border-color: var(--primary); outline: none; background: #fff; }
+        
+        .fare-calc-box { background: var(--gray); border-radius: 15px; padding: 15px; margin: 15px 0; border: 1px solid #eee; }
+        .calc-header { font-weight: bold; font-size: 14px; color: var(--dark); margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+        .calc-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; text-align: center; font-size: 12px; }
+        .calc-val { font-weight: 800; color: var(--primary); display: block; font-size: 14px; }
+
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 15px 0; }
+        button { border: none; border-radius: 12px; font-size: 15px; font-weight: bold; color: white; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 15px; }
+        .btn-start { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+        .btn-end { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        .btn-new { background: linear-gradient(135deg, #3498db, #2980b9); grid-column: span 1; }
+        .btn-report { background: linear-gradient(135deg, #34495e, #2c3e50); grid-column: span 1; }
+        button:active { transform: scale(0.96); }
+
+        .history-card { background: #fff; border: 1px solid #eee; border-radius: 15px; padding: 15px; margin-top: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+        .history-item { border-bottom: 1px solid #f0f0f0; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+        .chart-container { height: 180px; margin-top: 15px; }
+        
+        .rev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .rev-card { background: var(--gray); padding: 12px; border-radius: 12px; text-align: center; border: 1px solid #eee; }
+        .rev-label { font-size: 11px; color: #7f8c8d; display: block; }
+        .rev-amt { font-size: 15px; font-weight: bold; color: var(--primary); }
+
+        /* Receipt Style from Image */
+        #receipt-area { display: none; background: white; border-radius: 20px; padding: 20px; border: 1px solid #ddd; margin-top: 20px; }
+        .r-header { background: black; color: white; padding: 10px; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: 15px; }
+        .r-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f9f9f9; font-size: 14px; }
+        .r-total-box { background: var(--primary); color: white; text-align: center; padding: 15px; border-radius: 10px; font-size: 20px; font-weight: bold; margin: 15px 0; }
+        #qrcode { display: flex; justify-content: center; margin: 10px 0; }
     </style>
 </head>
 <body>
 
 <div class="app-container">
-    <div class="header-box"><div class="logo-circle">AS4</div><div class="brand-name">AS4 TAXI</div></div>
+    <div class="logo-section"><div class="logo-circle">AS4</div><div class="brand-name">AS4 TAXI</div></div>
     
     <input type="tel" id="mobile" placeholder="Customer Mobile (Optional)">
-    <input list="wp-towns" id="start-loc" placeholder="From (Start Location)">
-    <input list="wp-towns" id="end-loc" placeholder="To (End Location)">
+    <input list="wp-towns" id="start-loc" placeholder="Pick Up Location">
+    <input list="wp-towns" id="end-loc" placeholder="Drop Off Location">
 
     <datalist id="wp-towns">
-        <option value="Colombo Fort"><option value="Pettah"><option value="Kollupitiya"><option value="Bambalapitiya">
-        <option value="Havelock Town"><option value="Wellawatte"><option value="Cinnamon Gardens"><option value="Borella">
-        <option value="Dematagoda"><option value="Maradana"><option value="Kotahena"><option value="Grandpass">
-        <option value="Nugegoda"><option value="Maharagama"><option value="Kottawa"><option value="Pannipitiya">
-        <option value="Homagama"><option value="Kaduwela"><option value="Malabe"><option value="Battaramulla">
-        <option value="Rajagiriya"><option value="Dehiwala"><option value="Mount Lavinia"><option value="Ratmalana">
-        <option value="Moratuwa"><option value="Piliyandala"><option value="Boralesgamuwa"><option value="Athurugiriya">
-        <option value="Talawatugoda"><option value="Padukka"><option value="Hanwella"><option value="Avissawella">
-        <option value="Gampaha"><option value="Negombo"><option value="Katunayake"><option value="Ja-Ela">
-        <option value="Kandana"><option value="Wattala"><option value="Kiribathgoda"><option value="Kadawatha">
-        <option value="Ragama"><option value="Kelaniya"><option value="Biyagama"><option value="Ganemulla">
-        <option value="Veyangoda"><option value="Nittambuwa"><option value="Warakapola"><option value="Minuwangoda">
-        <option value="Divulapitiya"><option value="Mirigama"><option value="Kirindiwela">
-        <option value="Kalutara"><option value="Panadura"><option value="Horana"><option value="Beruwala">
-        <option value="Aluthgama"><option value="Matugama"><option value="Wadduwa"><option value="Bandaragama">
-        <option value="Ingiriya"><option value="Bulathsinhala"><option value="Agalawatte"><option value="Dharga Town">
+        <option value="Colombo Fort"><option value="Pettah"><option value="Nugegoda"><option value="Maharagama"><option value="Kottawa">
+        <option value="Gampaha"><option value="Negombo"><option value="Wattala"><option value="Kalutara"><option value="Panadura">
     </datalist>
 
-    <div id="live-meter">
-        <div id="timer" style="color:#e74c3c; font-weight:bold; font-size:18px;">00:00:00</div>
-        <div id="distance" style="font-size:26px; font-weight:900; color:#1a4a9e;">0.00 km</div>
+    <div class="fare-calc-box">
+        <div class="calc-header">Fare Calculator</div>
+        <div class="calc-grid">
+            <div>Distance: <span class="calc-val" id="disp-km">0.0 km</span></div>
+            <div>Rate/km: <span class="calc-val">Rs. 80</span></div>
+            <div>Estimated: <span class="calc-val" id="disp-fare">Rs. 0</span></div>
+        </div>
     </div>
 
-    <button class="btn-start" id="startBtn" onclick="startRide()">START RIDE</button>
-    <button class="btn-end" onclick="endRide()">END RIDE</button>
-    <button class="btn-new" onclick="location.reload()">NEW RIDE</button>
-    <button class="btn-report" onclick="toggleHistory()">INCOME REPORTS</button>
+    <div class="btn-grid">
+        <button class="btn-start" onclick="startRide()">START RIDE</button>
+        <button class="btn-end" onclick="endRide()">END RIDE</button>
+        <button class="btn-new" onclick="location.reload()">+ NEW RIDE</button>
+        <button class="btn-report" onclick="toggleReport()">INCOME REPORTS</button>
+    </div>
 
-    <div id="history-area"></div>
+    <div id="main-dashboard">
+        <div class="history-card">
+            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:14px;">
+                <span>Customer History</span>
+                <span style="color:var(--primary); font-size:12px; cursor:pointer;" onclick="toggleHistory()">View All ></span>
+            </div>
+            <div id="mini-history"></div>
+        </div>
 
-    <div class="revenue-section">
+        <div class="history-card">
+            <div style="font-weight:bold; font-size:14px; margin-bottom:10px;">Daily Earnings</div>
+            <div class="chart-container"><canvas id="earningsChart"></canvas></div>
+            <div style="text-align:center; font-weight:bold; color:var(--primary); margin-top:10px;">Today: Rs. <span id="today-total">0</span></div>
+        </div>
+
         <div class="rev-grid">
-            <div class="rev-card">Today<br><b id="today-inc">Rs. 0</b></div>
-            <div class="rev-card">This Month<br><b id="month-inc">Rs. 0</b></div>
-            <div class="rev-card">Short Runs<br><b id="short-runs">0</b></div>
-            <div class="rev-card">Long Runs<br><b id="long-runs">0</b></div>
+            <div class="rev-card"><span class="rev-label">Today</span><span class="rev-amt" id="stat-today">Rs. 0</span></div>
+            <div class="rev-card"><span class="rev-label">This Month</span><span class="rev-amt" id="stat-month">Rs. 0</span></div>
+            <div class="rev-card"><span class="rev-label">Short Runs</span><span class="rev-amt" id="stat-short">0</span></div>
+            <div class="rev-card"><span class="rev-label">Long Runs</span><span class="rev-amt" id="stat-long">0</span></div>
         </div>
     </div>
 
     <div id="receipt-area">
-        <div style="text-align:center; font-weight:bold; color:#1a4a9e; font-size:18px; margin-bottom:15px;">AS4 TAXI - RECEIPT</div>
-        <div id="r-content"></div>
-        <div style="background:#1a4a9e; color:white; padding:15px; text-align:center; border-radius:10px; margin-top:15px; font-weight:bold; font-size:20px;" id="r-total"></div>
-        <button style="background:#25d366; margin-top:15px;" onclick="share()">SHARE TO WHATSAPP</button>
+        <div class="r-header">AS4 TAXI</div>
+        <div id="r-body"></div>
+        <div class="r-total-box" id="r-total"></div>
+        <div id="qrcode"></div>
+        <button style="background:#2ecc71; width:100%;" onclick="share()">SHARE TO WHATSAPP</button>
     </div>
 </div>
 
 <script>
-    let sTime, lastLat, lastLon, watchID, totalKm = 0, timerInt;
+    let sTime, watchID, totalKm = 0, lastLat, lastLon;
+    const RATE = 80, BASE = 100;
 
     function startRide() {
-        if (navigator.geolocation) {
-            sTime = new Date();
-            document.getElementById('startBtn').innerText = "RIDE ACTIVE ✅";
-            document.getElementById('live-meter').style.display = "block";
-            timerInt = setInterval(() => {
-                let diff = Math.floor((new Date() - sTime) / 1000);
-                document.getElementById('timer').innerText = new Date(diff * 1000).toISOString().substr(11, 8);
-            }, 1000);
-            navigator.geolocation.getCurrentPosition(p => {
-                lastLat = p.coords.latitude; lastLon = p.coords.longitude;
-                watchID = navigator.geolocation.watchPosition(pos => {
-                    let d = calc(lastLat, lastLon, pos.coords.latitude, pos.coords.longitude);
-                    if (d > 0.005) { totalKm += d; lastLat = pos.coords.latitude; lastLon = pos.coords.longitude; }
-                    document.getElementById('distance').innerText = totalKm.toFixed(2) + " km";
-                }, null, { enableHighAccuracy: true });
-            });
-        }
+        if (!navigator.geolocation) return alert("GPS not supported");
+        sTime = new Date();
+        document.querySelector('.btn-start').innerText = "RIDE ACTIVE ✅";
+        navigator.geolocation.getCurrentPosition(p => {
+            lastLat = p.coords.latitude; lastLon = p.coords.longitude;
+            watchID = navigator.geolocation.watchPosition(pos => {
+                let d = calcDist(lastLat, lastLon, pos.coords.latitude, pos.coords.longitude);
+                if (d > 0.005) { 
+                    totalKm += d; lastLat = pos.coords.latitude; lastLon = pos.coords.longitude; 
+                    document.getElementById('disp-km').innerText = totalKm.toFixed(2) + " km";
+                    document.getElementById('disp-fare').innerText = "Rs. " + Math.round(BASE + (Math.max(0, totalKm - 1) * RATE));
+                }
+            }, null, {enableHighAccuracy: true});
+        });
     }
 
-    function calc(lat1, lon1, lat2, lon2) {
+    function calcDist(lat1, lon1, lat2, lon2) {
         const R = 6371;
         const dLat = (lat2-lat1)*Math.PI/180;
         const dLon = (lon2-lon1)*Math.PI/180;
@@ -114,59 +141,82 @@
 
     function endRide() {
         if(!sTime) return;
-        clearInterval(timerInt);
         navigator.geolocation.clearWatch(watchID);
         let eTime = new Date();
-        let fare = Math.round(100 + (Math.max(0, totalKm - 1) * 80));
-        let from = document.getElementById('start-loc').value || "Not Set";
-        let to = document.getElementById('end-loc').value || "Not Set";
+        let fare = Math.round(BASE + (Math.max(0, totalKm - 1) * RATE));
+        let from = document.getElementById('start-loc').value || "Current";
+        let to = document.getElementById('end-loc').value || "Destination";
         
+        // Receipt Generation based on Image 1000089271.jpg
         let html = `
-            <div class="r-row"><span>Date:</span> <b>${eTime.toLocaleDateString()}</b></div>
+            <div class="r-row"><span>Date & Time:</span> <b>${eTime.toLocaleDateString()} | ${eTime.getHours()}:${eTime.getMinutes()}</b></div>
             <div class="r-row"><span>Route:</span> <b>${from} ➔ ${to}</b></div>
             <div class="r-row"><span>Distance:</span> <b>${totalKm.toFixed(2)} km</b></div>
-            <div class="r-row"><span>Time:</span> <b>${sTime.toLocaleTimeString()} - ${eTime.toLocaleTimeString()}</b></div>
-            <div class="r-row"><span>Mobile:</span> <b>${document.getElementById('mobile').value || 'N/A'}</b></div>
+            <div class="r-row"><span>Start Time:</span> <b>${sTime.toLocaleTimeString()}</b></div>
+            <div class="r-row"><span>End Time:</span> <b>${eTime.toLocaleTimeString()}</b></div>
         `;
+        document.getElementById('r-body').innerHTML = html;
+        document.getElementById('r-total').innerText = "Total: Rs. " + fare;
         
-        document.getElementById('r-content').innerHTML = html;
-        document.getElementById('r-total').innerText = "TOTAL: Rs. " + fare;
+        // QR Code Generation
+        document.getElementById('qrcode').innerHTML = "";
+        new QRCode(document.getElementById("qrcode"), { text: "AS4-TAXI-"+fare, width: 80, height: 80 });
+        
         document.getElementById('receipt-area').style.display = "block";
-        document.getElementById('live-meter').style.display = "none";
-        
-        saveData(fare, totalKm, from, to);
+        document.getElementById('main-dashboard').style.display = "none";
+        saveRide(fare, totalKm, from, to);
     }
 
-    function saveData(f, d, from, to) {
-        let h = JSON.parse(localStorage.getItem('as4_final_master') || '[]');
+    function saveRide(f, d, from, to) {
+        let h = JSON.parse(localStorage.getItem('as4_ultra_data') || '[]');
         h.push({f, d, from, to, time: new Date().getTime()});
-        localStorage.setItem('as4_final_master', JSON.stringify(h));
-        render();
+        localStorage.setItem('as4_ultra_data', JSON.stringify(h));
+        updateUI();
     }
 
-    function toggleHistory() {
-        let area = document.getElementById('history-area');
-        area.style.display = area.style.display === 'block' ? 'none' : 'block';
-        let h = JSON.parse(localStorage.getItem('as4_final_master') || '[]');
-        area.innerHTML = h.slice().reverse().map(i => `
-            <div style="border-bottom:1px solid #eee; padding:8px;">
-                <b>${i.from} to ${i.to}</b><br>
-                Rs.${i.f} | ${i.d.toFixed(2)}km | ${new Date(i.time).toLocaleDateString()}
+    function updateUI() {
+        let h = JSON.parse(localStorage.getItem('as4_ultra_data') || '[]');
+        let today = h.filter(i => new Date(i.time).toDateString() === new Date().toDateString());
+        let todayTotal = today.reduce((a, b) => a + b.f, 0);
+        
+        document.getElementById('stat-today').innerText = "Rs. " + todayTotal;
+        document.getElementById('today-total').innerText = todayTotal;
+        document.getElementById('stat-month').innerText = "Rs. " + h.reduce((a, b) => a + b.f, 0);
+        document.getElementById('stat-short').innerText = h.filter(i => i.d < 5).length;
+        document.getElementById('stat-long').innerText = h.filter(i => i.d >= 5).length;
+
+        // Mini History
+        document.getElementById('mini-history').innerHTML = h.slice(-4).reverse().map(i => `
+            <div class="history-item">
+                <span>${new Date(i.time).toLocaleDateString()} | ${i.from}➔${i.to}</span>
+                <b>Rs. ${i.f}</b>
             </div>
         `).join('');
+
+        updateChart(h);
     }
 
-    function render() {
-        let h = JSON.parse(localStorage.getItem('as4_final_master') || '[]');
-        let todayStr = new Date().toDateString();
-        let todayData = h.filter(i => new Date(i.time).toDateString() === todayStr);
+    function updateChart(data) {
+        const ctx = document.getElementById('earningsChart').getContext('2d');
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        let dayTotals = [0,0,0,0,0,0,0];
         
-        document.getElementById('today-inc').innerText = "Rs. " + todayData.reduce((s, i) => s + i.f, 0);
-        document.getElementById('month-inc').innerText = "Rs. " + h.reduce((s, i) => s + i.f, 0);
-        document.getElementById('short-runs').innerText = h.filter(i => i.d < 5).length;
-        document.getElementById('long-runs').innerText = h.filter(i => i.d >= 5).length;
+        data.forEach(item => {
+            let d = new Date(item.time).getDay();
+            let idx = d === 0 ? 6 : d - 1; // Adjust for Sunday
+            dayTotals[idx] += item.f;
+        });
+
+        if(window.myChart) window.myChart.destroy();
+        window.myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: days,
+                datasets: [{ data: dayTotals, backgroundColor: '#1a4a9e', borderRadius: 5 }]
+            },
+            options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+        });
     }
-    render();
 
     async function share() {
         const canvas = await html2canvas(document.getElementById('receipt-area'));
@@ -175,6 +225,8 @@
             if(navigator.share) navigator.share({files:[f]});
         });
     }
+
+    window.onload = updateUI;
 </script>
 </body>
 </html>
