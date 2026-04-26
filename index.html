@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AS4 TAXI - Ultra Pro v12</title>
+    <title>AS4 TAXI - Ultra Pro v13</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -37,13 +37,13 @@
         .stat-box b { display: block; color: var(--primary); font-size: 14px; margin-top: 2px; }
 
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
-        .modal-content { background: white; width: 90%; max-width: 380px; border-radius: 25px; padding: 20px; position: relative; }
+        .modal-content { background: white; width: 90%; max-width: 380px; border-radius: 25px; padding: 25px; position: relative; }
         #receipt-render { background: white; padding: 15px; border-radius: 15px; border: 1px solid #eee; }
         .r-header { background: black; color: white; padding: 8px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 10px; }
         .r-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f9f9f9; font-size: 12px; }
         .r-total-box { background: var(--primary); color: white; text-align: center; padding: 12px; border-radius: 8px; font-size: 18px; font-weight: bold; margin: 10px 0; }
         .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .close-btn { position: absolute; top: -10px; right: -10px; background: var(--accent); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; }
+        .close-btn { position: absolute; top: -10px; right: -10px; background: var(--accent); color: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
 
         .section-card { display: none; }
         .history-item { border-bottom: 1px solid #eee; padding: 10px 0; font-size: 11px; }
@@ -86,12 +86,12 @@
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <div class="close-btn" onclick="toggleSection('settings-modal')">X</div>
-            <h3 style="color:var(--primary); text-align:center;">Fare Settings</h3>
-            <label style="font-size:12px;">1st KM Fare (Base Rate):</label>
+            <h3 style="color:var(--primary); text-align:center; margin-bottom:15px;">Fare Settings</h3>
+            <label style="font-size:12px; font-weight:bold; color:var(--dark);">1st KM Fare (Base Rate):</label>
             <input type="number" id="set-base" placeholder="Ex: 100">
-            <label style="font-size:12px;">Next KM Rate:</label>
+            <label style="font-size:12px; font-weight:bold; color:var(--dark); margin-top:10px; display:block;">Next KM Rate:</label>
             <input type="number" id="set-rate" placeholder="Ex: 80">
-            <button style="background:var(--secondary); width:100%; margin-top:10px;" onclick="saveSettings()">SAVE SETTINGS</button>
+            <button style="background:var(--secondary); width:100%; margin-top:20px; font-size:15px;" onclick="saveSettings()">SAVE SETTINGS</button>
         </div>
     </div>
 
@@ -151,7 +151,6 @@
         localStorage.setItem('as4_settings', JSON.stringify({base: BASE, rate: RATE}));
         document.getElementById('disp-rate-info').innerText = "Rs. " + RATE;
         toggleSection('settings-modal');
-        alert("Rates Saved!");
     }
 
     function startRide() {
@@ -179,7 +178,7 @@
     }
 
     function genReceiptID() {
-        let h = JSON.parse(localStorage.getItem('as4_v12_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v13_data') || '[]');
         let d = new Date();
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         return `${d.getDate()}${monthNames[d.getMonth()]}-AS4-${(h.length + 1).toString().padStart(5, '0')}`;
@@ -188,13 +187,11 @@
     function endRide() {
         if(!sTime) return;
         navigator.geolocation.clearWatch(watchID);
-        let eTime = new Date();
-        let manual = document.getElementById('manual-fare').value;
-        let fare = manual ? parseInt(manual) : Math.round(BASE + (Math.max(0, totalKm - 1) * RATE));
+        let fare = document.getElementById('manual-fare').value ? parseInt(document.getElementById('manual-fare').value) : Math.round(BASE + (Math.max(0, totalKm - 1) * RATE));
         let from = document.getElementById('start-loc').value || "Current";
         let to = document.getElementById('end-loc').value || "Destination";
         currentRID = genReceiptID();
-        document.getElementById('r-body').innerHTML = `<div class="r-row"><span>ID:</span><b>${currentRID}</b></div><div class="r-row"><span>Route:</span><b>${from}➔${to}</b></div><div class="r-row"><span>KM:</span><b>${totalKm.toFixed(2)}</b></div><div class="r-row"><span>Time:</span><b>${sTime.toLocaleTimeString()}-${eTime.toLocaleTimeString()}</b></div>`;
+        document.getElementById('r-body').innerHTML = `<div class="r-row"><span>ID:</span><b>${currentRID}</b></div><div class="r-row"><span>Route:</span><b>${from}➔${to}</b></div><div class="r-row"><span>KM:</span><b>${totalKm.toFixed(2)}</b></div><div class="r-row"><span>Time:</span><b>${sTime.toLocaleTimeString()}</b></div>`;
         document.getElementById('r-total').innerText = "Total: Rs. " + fare;
         document.getElementById('qrcode').innerHTML = ""; new QRCode(document.getElementById("qrcode"), { text: currentRID, width: 80, height: 80 });
         document.getElementById('receiptModal').style.display = "flex";
@@ -202,9 +199,9 @@
     }
 
     function saveRide(f, d, from, to, rid) {
-        let h = JSON.parse(localStorage.getItem('as4_v12_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v13_data') || '[]');
         h.push({f, d, from, to, rid, time: new Date().getTime()});
-        localStorage.setItem('as4_v12_data', JSON.stringify(h));
+        localStorage.setItem('as4_v13_data', JSON.stringify(h));
         updateUI();
     }
 
@@ -212,26 +209,22 @@
     function closeModal() { document.getElementById('receiptModal').style.display = "none"; }
 
     function updateUI() {
-        let h = JSON.parse(localStorage.getItem('as4_v12_data') || '[]');
-        let fromD = document.getElementById('date-from').value;
-        let toD = document.getElementById('date-to').value;
-        let filtered = h;
-        if(fromD && toD) filtered = h.filter(i => { let d = new Date(i.time).toISOString().split('T')[0]; return d >= fromD && d <= toD; });
-
-        document.getElementById('history-list').innerHTML = filtered.slice().reverse().map(i => `<div class="history-item"><div style="display:flex;justify-content:space-between;"><b>${i.rid}</b><span>${new Date(i.time).toLocaleDateString()}</span></div><div style="color:var(--primary);font-weight:bold;">${i.from}➔${i.to}</div><div style="display:flex;justify-content:space-between;"><span>${i.d.toFixed(2)} km</span><b>Rs. ${i.f}</b></div></div>`).join('');
+        let h = JSON.parse(localStorage.getItem('as4_v13_data') || '[]');
         let tVal = h.filter(i => new Date(i.time).toDateString() === new Date().toDateString()).reduce((a, b) => a + b.f, 0);
         document.getElementById('stat-today').innerText = "Rs. " + tVal; document.getElementById('stat-today-main').innerText = tVal;
         document.getElementById('stat-month').innerText = "Rs. " + h.reduce((a, b) => a + b.f, 0);
+        
         let dayData = [0,0,0,0,0,0,0]; h.forEach(i => { let d = new Date(i.time).getDay(); dayData[d === 0 ? 6 : d-1] += i.f; });
         if(window.mChart) window.mChart.destroy();
         window.mChart = new Chart(document.getElementById('earningsChart').getContext('2d'), { type: 'bar', data: { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets: [{ data: dayData, backgroundColor: '#1a4a9e', borderRadius: 5 }] }, options: { plugins: { legend: { display: false } } } });
+
+        document.getElementById('history-list').innerHTML = h.slice().reverse().map(i => `<div class="history-item"><div style="display:flex;justify-content:space-between;"><b>${i.rid}</b><span>${new Date(i.time).toLocaleDateString()}</span></div><div style="color:var(--primary);font-weight:bold;">${i.from}➔${i.to}</div><div style="display:flex;justify-content:space-between;"><span>${i.d.toFixed(2)} km</span><b>Rs. ${i.f}</b></div></div>`).join('');
     }
 
     function downloadCSV() {
-        let h = JSON.parse(localStorage.getItem('as4_v12_data') || '[]');
-        let csv = "ID,Date,From,To,KM,Fare\n"; h.forEach(i => csv += `${i.rid},${new Date(i.time).toLocaleDateString()},${i.from},${i.to},${i.d.toFixed(2)},${i.f}\n`);
-        const blob = new Blob([csv], { type: 'text/csv' }); const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = `Report_${new Date().toISOString().split('T')[0]}.csv`; a.click();
+        let h = JSON.parse(localStorage.getItem('as4_v13_data') || '[]');
+        let csv = "ID,Date,KM,Fare\n"; h.forEach(i => csv += `${i.rid},${new Date(i.time).toLocaleDateString()},${i.d.toFixed(2)},${i.f}\n`);
+        const a = document.createElement('a'); a.href = window.URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `Report_${new Date().toISOString().split('T')[0]}.csv`; a.click();
     }
 
     async function downloadPDF() { const { jsPDF } = window.jspdf; const canvas = await html2canvas(document.getElementById('receipt-render')); const pdf = new jsPDF('p', 'mm', [80, 150]); pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 80, 150); pdf.save(`${currentRID}.pdf`); }
