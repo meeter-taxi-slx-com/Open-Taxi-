@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AS4 TAXI - Ultra Pro v11</title>
+    <title>AS4 TAXI - Ultra Pro v12</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -12,9 +12,11 @@
         :root { --primary: #1a4a9e; --secondary: #2ecc71; --accent: #e74c3c; --dark: #2c3e50; --gray: #f4f7f6; }
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 15px; display: flex; justify-content: center; }
         .app-container { background: white; width: 100%; max-width: 420px; border-radius: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); padding: 25px; }
-        .logo-section { text-align: center; margin-bottom: 20px; }
+        .logo-section { text-align: center; margin-bottom: 20px; position: relative; }
         .logo-circle { background: var(--primary); color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 5px; font-weight: bold; border: 4px solid #fff; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .brand-name { color: var(--primary); font-size: 22px; font-weight: 900; }
+        
+        .settings-icon { position: absolute; right: 0; top: 10px; cursor: pointer; font-size: 20px; color: var(--primary); }
         
         input { width: 100%; padding: 12px; margin: 6px 0; border: 1px solid #e0e0e0; border-radius: 12px; font-size: 14px; box-sizing: border-box; background: var(--gray); }
         .fare-calc-box { background: var(--gray); border-radius: 15px; padding: 12px; margin: 10px 0; border: 1px solid #eee; }
@@ -29,7 +31,6 @@
         .btn-history { background: #8e44ad; }
         .btn-new { background: #3498db; }
         
-        /* Earnings Card Style from Image */
         .chart-container { background: white; border: 1px solid #eee; border-radius: 20px; padding: 15px; margin-top: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
         .stat-box { background: var(--gray); padding: 10px; border-radius: 15px; text-align: center; font-size: 11px; color: #7f8c8d; }
@@ -51,7 +52,11 @@
 <body>
 
 <div class="app-container">
-    <div class="logo-section"><div class="logo-circle">AS4</div><div class="brand-name">AS4 TAXI</div></div>
+    <div class="logo-section">
+        <div class="logo-circle">AS4</div>
+        <div class="brand-name">AS4 TAXI</div>
+        <div class="settings-icon" onclick="toggleSection('settings-modal')">⚙️</div>
+    </div>
     
     <input type="tel" id="mobile" placeholder="Customer Mobile (Optional)">
     <input list="wp-towns" id="start-loc" placeholder="Pick Up Location">
@@ -59,13 +64,13 @@
     <input type="number" id="manual-fare" placeholder="Manual Fare (Optional)">
 
     <datalist id="wp-towns">
-        <option value="Colombo Fort"><option value="Pettah"><option value="Kollupitiya"><option value="Bambalapitiya"><option value="Wellawatte"><option value="Havelock Town"><option value="Cinnamon Gardens"><option value="Borella"><option value="Dematagoda"><option value="Maradana"><option value="Kotahena"><option value="Grandpass"><option value="Nugegoda"><option value="Maharagama"><option value="Kottawa"><option value="Pannipitiya"><option value="Homagama"><option value="Kaduwela"><option value="Malabe"><option value="Battaramulla"><option value="Rajagiriya"><option value="Dehiwala"><option value="Mount Lavinia"><option value="Ratmalana"><option value="Moratuwa"><option value="Piliyandala"><option value="Boralesgamuwa"><option value="Athurugiriya"><option value="Talawatugoda"><option value="Padukka"><option value="Hanwella"><option value="Avissawella"><option value="Gampaha"><option value="Negombo"><option value="Katunayake"><option value="Ja-Ela"><option value="Kandana"><option value="Wattala"><option value="Kiribathgoda"><option value="Kadawatha"><option value="Ragama"><option value="Kelaniya"><option value="Biyagama"><option value="Ganemulla"><option value="Veyangoda"><option value="Nittambuwa"><option value="Minuwangoda"><option value="Kalutara"><option value="Panadura"><option value="Horana"><option value="Beruwala"><option value="Aluthgama"><option value="Matugama"><option value="Wadduwa"><option value="Bandaragama">
+        <option value="Colombo Fort"><option value="Pettah"><option value="Kollupitiya"><option value="Bambalapitiya"><option value="Wellawatte"><option value="Nugegoda"><option value="Maharagama"><option value="Kottawa"><option value="Homagama"><option value="Gampaha"><option value="Negombo"><option value="Wattala"><option value="Kalutara"><option value="Panadura"><option value="Horana">
     </datalist>
 
     <div class="fare-calc-box">
         <div class="calc-grid">
             <div>Distance: <span class="calc-val" id="disp-km">0.0 km</span></div>
-            <div>Rate/km: <span class="calc-val">Rs. 80</span></div>
+            <div>Rate/km: <span class="calc-val" id="disp-rate-info">Rs. 80</span></div>
             <div>Estimated: <span class="calc-val" id="disp-fare">Rs. 0</span></div>
         </div>
     </div>
@@ -78,27 +83,34 @@
         <button class="btn-new" onclick="location.reload()" style="grid-column: span 2;">+ NEW RIDE</button>
     </div>
 
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="close-btn" onclick="toggleSection('settings-modal')">X</div>
+            <h3 style="color:var(--primary); text-align:center;">Fare Settings</h3>
+            <label style="font-size:12px;">1st KM Fare (Base Rate):</label>
+            <input type="number" id="set-base" placeholder="Ex: 100">
+            <label style="font-size:12px;">Next KM Rate:</label>
+            <input type="number" id="set-rate" placeholder="Ex: 80">
+            <button style="background:var(--secondary); width:100%; margin-top:10px;" onclick="saveSettings()">SAVE SETTINGS</button>
+        </div>
+    </div>
+
     <div id="report-section" class="section-card">
         <div class="chart-container">
             <div style="font-weight:bold; font-size:14px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
                 <span>Daily Earnings</span>
-                <button onclick="downloadCSV()" style="padding:5px; font-size:10px; background:var(--primary); width:auto; border-radius:5px;">Download CSV ⬇</button>
+                <button onclick="downloadCSV()" style="padding:5px; font-size:10px; background:var(--primary); width:auto; border-radius:5px;">CSV ⬇</button>
             </div>
             <canvas id="earningsChart" height="180"></canvas>
             <div style="text-align:center; margin-top:10px; font-weight:bold; color:var(--primary);">Today: Rs. <span id="stat-today-main">0</span></div>
-            
-            <div class="stats-grid">
-                <div class="stat-box">Today<b id="stat-today">Rs. 0</b></div>
-                <div class="stat-box">This Month<b id="stat-month">Rs. 0</b></div>
-            </div>
+            <div class="stats-grid"><div class="stat-box">Today<b id="stat-today">Rs. 0</b></div><div class="stat-box">This Month<b id="stat-month">Rs. 0</b></div></div>
         </div>
     </div>
 
     <div id="history-section" class="section-card chart-container">
         <div style="font-weight:bold; font-size:14px; margin-bottom:5px;">Travel History</div>
         <div style="display:flex; gap:5px; margin-bottom:10px;">
-            <input type="date" id="date-from" style="padding:5px; font-size:10px;">
-            <input type="date" id="date-to" style="padding:5px; font-size:10px;">
+            <input type="date" id="date-from" style="padding:5px; font-size:10px;"><input type="date" id="date-to" style="padding:5px; font-size:10px;">
             <button onclick="updateUI()" style="background:var(--primary); padding:5px; width:auto; font-size:10px;">Filter</button>
         </div>
         <div id="history-list" style="max-height:200px; overflow-y:auto;"></div>
@@ -123,7 +135,24 @@
 
 <script>
     let sTime, watchID, totalKm = 0, lastLat, lastLon, currentRID = "";
-    const RATE = 80, BASE = 100;
+    let RATE = 80, BASE = 100;
+
+    function loadSettings() {
+        let s = JSON.parse(localStorage.getItem('as4_settings') || '{"base":100, "rate":80}');
+        BASE = s.base; RATE = s.rate;
+        document.getElementById('set-base').value = BASE;
+        document.getElementById('set-rate').value = RATE;
+        document.getElementById('disp-rate-info').innerText = "Rs. " + RATE;
+    }
+
+    function saveSettings() {
+        BASE = parseInt(document.getElementById('set-base').value);
+        RATE = parseInt(document.getElementById('set-rate').value);
+        localStorage.setItem('as4_settings', JSON.stringify({base: BASE, rate: RATE}));
+        document.getElementById('disp-rate-info').innerText = "Rs. " + RATE;
+        toggleSection('settings-modal');
+        alert("Rates Saved!");
+    }
 
     function startRide() {
         if (!navigator.geolocation) return alert("GPS Error");
@@ -132,14 +161,14 @@
         watchID = navigator.geolocation.watchPosition(pos => {
             if (lastLat && lastLon) {
                 let d = calcDist(lastLat, lastLon, pos.coords.latitude, pos.coords.longitude);
-                if (d > 0.002) { totalKm += d; }
+                if (d > 0.002) totalKm += d;
             }
             lastLat = pos.coords.latitude; lastLon = pos.coords.longitude;
             document.getElementById('disp-km').innerText = totalKm.toFixed(2) + " km";
             if(!document.getElementById('manual-fare').value) {
                 document.getElementById('disp-fare').innerText = "Rs. " + Math.round(BASE + (Math.max(0, totalKm - 1) * RATE));
             }
-        }, null, {enableHighAccuracy: true, maximumAge: 0});
+        }, null, {enableHighAccuracy: true});
     }
 
     function calcDist(lat1, lon1, lat2, lon2) {
@@ -150,7 +179,7 @@
     }
 
     function genReceiptID() {
-        let h = JSON.parse(localStorage.getItem('as4_v11_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v12_data') || '[]');
         let d = new Date();
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         return `${d.getDate()}${monthNames[d.getMonth()]}-AS4-${(h.length + 1).toString().padStart(5, '0')}`;
@@ -165,93 +194,50 @@
         let from = document.getElementById('start-loc').value || "Current";
         let to = document.getElementById('end-loc').value || "Destination";
         currentRID = genReceiptID();
-        
-        document.getElementById('r-body').innerHTML = `
-            <div class="r-row"><span>Receipt ID:</span> <b>${currentRID}</b></div>
-            <div class="r-row"><span>Route:</span> <b>${from} ➔ ${to}</b></div>
-            <div class="r-row"><span>Distance:</span> <b>${totalKm.toFixed(2)} km</b></div>
-            <div class="r-row"><span>Time:</span> <b>${sTime.toLocaleTimeString()} - ${eTime.toLocaleTimeString()}</b></div>
-        `;
+        document.getElementById('r-body').innerHTML = `<div class="r-row"><span>ID:</span><b>${currentRID}</b></div><div class="r-row"><span>Route:</span><b>${from}➔${to}</b></div><div class="r-row"><span>KM:</span><b>${totalKm.toFixed(2)}</b></div><div class="r-row"><span>Time:</span><b>${sTime.toLocaleTimeString()}-${eTime.toLocaleTimeString()}</b></div>`;
         document.getElementById('r-total').innerText = "Total: Rs. " + fare;
-        document.getElementById('qrcode').innerHTML = "";
-        new QRCode(document.getElementById("qrcode"), { text: currentRID, width: 80, height: 80 });
+        document.getElementById('qrcode').innerHTML = ""; new QRCode(document.getElementById("qrcode"), { text: currentRID, width: 80, height: 80 });
         document.getElementById('receiptModal').style.display = "flex";
         saveRide(fare, totalKm, from, to, currentRID);
     }
 
     function saveRide(f, d, from, to, rid) {
-        let h = JSON.parse(localStorage.getItem('as4_v11_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v12_data') || '[]');
         h.push({f, d, from, to, rid, time: new Date().getTime()});
-        localStorage.setItem('as4_v11_data', JSON.stringify(h));
+        localStorage.setItem('as4_v12_data', JSON.stringify(h));
         updateUI();
     }
 
-    function toggleSection(id) {
-        let s = document.getElementById(id);
-        s.style.display = s.style.display === "block" ? "none" : "block";
-    }
-
+    function toggleSection(id) { let s = document.getElementById(id); s.style.display = s.style.display === "block" ? "none" : "block"; }
     function closeModal() { document.getElementById('receiptModal').style.display = "none"; }
 
     function updateUI() {
-        let h = JSON.parse(localStorage.getItem('as4_v11_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v12_data') || '[]');
         let fromD = document.getElementById('date-from').value;
         let toD = document.getElementById('date-to').value;
         let filtered = h;
-        if(fromD && toD) { filtered = h.filter(i => { let d = new Date(i.time).toISOString().split('T')[0]; return d >= fromD && d <= toD; }); }
+        if(fromD && toD) filtered = h.filter(i => { let d = new Date(i.time).toISOString().split('T')[0]; return d >= fromD && d <= toD; });
 
-        document.getElementById('history-list').innerHTML = filtered.slice().reverse().map(i => `
-            <div class="history-item">
-                <div style="display:flex; justify-content:space-between;"><b>${i.rid}</b> <span>${new Date(i.time).toLocaleDateString()}</span></div>
-                <div style="color:var(--primary); font-weight:bold;">${i.from} ➔ ${i.to}</div>
-                <div style="display:flex; justify-content:space-between;"><span>${i.d.toFixed(2)} km</span> <b>Rs. ${i.f}</b></div>
-            </div>
-        `).join('');
-
-        let todayVal = h.filter(i => new Date(i.time).toDateString() === new Date().toDateString()).reduce((a, b) => a + b.f, 0);
-        document.getElementById('stat-today').innerText = "Rs. " + todayVal;
-        document.getElementById('stat-today-main').innerText = todayVal;
+        document.getElementById('history-list').innerHTML = filtered.slice().reverse().map(i => `<div class="history-item"><div style="display:flex;justify-content:space-between;"><b>${i.rid}</b><span>${new Date(i.time).toLocaleDateString()}</span></div><div style="color:var(--primary);font-weight:bold;">${i.from}➔${i.to}</div><div style="display:flex;justify-content:space-between;"><span>${i.d.toFixed(2)} km</span><b>Rs. ${i.f}</b></div></div>`).join('');
+        let tVal = h.filter(i => new Date(i.time).toDateString() === new Date().toDateString()).reduce((a, b) => a + b.f, 0);
+        document.getElementById('stat-today').innerText = "Rs. " + tVal; document.getElementById('stat-today-main').innerText = tVal;
         document.getElementById('stat-month').innerText = "Rs. " + h.reduce((a, b) => a + b.f, 0);
-
-        let dayData = [0,0,0,0,0,0,0];
-        h.forEach(i => { let d = new Date(i.time).getDay(); dayData[d === 0 ? 6 : d-1] += i.f; });
+        let dayData = [0,0,0,0,0,0,0]; h.forEach(i => { let d = new Date(i.time).getDay(); dayData[d === 0 ? 6 : d-1] += i.f; });
         if(window.mChart) window.mChart.destroy();
-        window.mChart = new Chart(document.getElementById('earningsChart').getContext('2d'), {
-            type: 'bar',
-            data: { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets: [{ data: dayData, backgroundColor: '#1a4a9e', borderRadius: 5 }] },
-            options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#f0f0f0' } }, x: { grid: { display: false } } } }
-        });
+        window.mChart = new Chart(document.getElementById('earningsChart').getContext('2d'), { type: 'bar', data: { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets: [{ data: dayData, backgroundColor: '#1a4a9e', borderRadius: 5 }] }, options: { plugins: { legend: { display: false } } } });
     }
 
     function downloadCSV() {
-        let h = JSON.parse(localStorage.getItem('as4_v11_data') || '[]');
-        let csv = "ID,Date,From,To,KM,Fare\n";
-        h.forEach(i => csv += `${i.rid},${new Date(i.time).toLocaleDateString()},${i.from},${i.to},${i.d.toFixed(2)},${i.f}\n`);
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a'); 
-        a.href = url; 
-        a.download = `Report_${new Date().toISOString().split('T')[0]}.csv`;
-        a.click();
+        let h = JSON.parse(localStorage.getItem('as4_v12_data') || '[]');
+        let csv = "ID,Date,From,To,KM,Fare\n"; h.forEach(i => csv += `${i.rid},${new Date(i.time).toLocaleDateString()},${i.from},${i.to},${i.d.toFixed(2)},${i.f}\n`);
+        const blob = new Blob([csv], { type: 'text/csv' }); const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `Report_${new Date().toISOString().split('T')[0]}.csv`; a.click();
     }
 
-    async function downloadPDF() {
-        const { jsPDF } = window.jspdf;
-        const canvas = await html2canvas(document.getElementById('receipt-render'));
-        const pdf = new jsPDF('p', 'mm', [80, 150]);
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 80, 150);
-        pdf.save(`${currentRID}.pdf`);
-    }
+    async function downloadPDF() { const { jsPDF } = window.jspdf; const canvas = await html2canvas(document.getElementById('receipt-render')); const pdf = new jsPDF('p', 'mm', [80, 150]); pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 80, 150); pdf.save(`${currentRID}.pdf`); }
+    async function share() { const canvas = await html2canvas(document.getElementById('receipt-render')); canvas.toBlob(b => { const f = new File([b], `${currentRID}.png`, {type:'image/png'}); if(navigator.share) navigator.share({files:[f]}); }); }
 
-    async function share() {
-        const canvas = await html2canvas(document.getElementById('receipt-render'));
-        canvas.toBlob(b => {
-            const f = new File([b], `${currentRID}.png`, {type:'image/png'});
-            if(navigator.share) navigator.share({files:[f]});
-        });
-    }
-
-    window.onload = updateUI;
+    window.onload = () => { loadSettings(); updateUI(); };
 </script>
 </body>
 </html>
