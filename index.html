@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AS4 TAXI - Ultra Pro v22</title>
+    <title>AS4 TAXI - Ultra Pro v23 (Full v18 Base)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -19,11 +19,11 @@
         .settings-icon { position: absolute; right: 0; top: 10px; cursor: pointer; font-size: 20px; color: var(--primary); }
         input, textarea, select { width: 100%; padding: 12px; margin: 6px 0; border: 1px solid #e0e0e0; border-radius: 12px; font-size: 14px; box-sizing: border-box; background: var(--gray); font-family: inherit; }
         
-        /* POINT 05: Big Fonts for Visibility */
-        .fare-calc-box { background: var(--gray); border-radius: 15px; padding: 20px; margin: 10px 0; border: 1px solid #eee; text-align: center; }
-        .calc-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
-        .calc-label { font-size: 13px; color: #7f8c8d; font-weight: bold; }
-        .calc-val-big { font-weight: 900; color: var(--primary); display: block; font-size: 38px; line-height: 1.1; }
+        /* POINT 05: Big Fonts - Only for main display */
+        .fare-calc-box { background: var(--gray); border-radius: 15px; padding: 15px; margin: 10px 0; border: 1px solid #eee; text-align: center; }
+        .calc-grid { display: grid; grid-template-columns: 1fr; gap: 5px; }
+        .calc-label { font-size: 12px; color: #7f8c8d; font-weight: bold; }
+        .calc-val-big { font-weight: 900; color: var(--primary); display: block; font-size: 36px; }
         
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
         button { border: none; border-radius: 12px; font-size: 13px; font-weight: bold; color: white; cursor: pointer; padding: 14px; }
@@ -32,6 +32,12 @@
         .btn-report { background: #34495e; }
         .btn-history { background: #8e44ad; }
         .btn-new { background: #3498db; }
+        
+        .chart-container { background: white; border: 1px solid #eee; border-radius: 20px; padding: 15px; margin-top: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .stat-box { background: var(--gray); padding: 10px; border-radius: 15px; text-align: center; font-size: 11px; color: #7f8c8d; }
+        .stat-box b { display: block; color: var(--primary); font-size: 14px; margin-top: 2px; }
+
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
         .modal-content { background: white; width: 85%; max-width: 360px; border-radius: 25px; padding: 30px 20px; position: relative; margin: auto; max-height: 90vh; overflow-y: auto; }
         #receipt-render { background: white; padding: 15px; border-radius: 15px; border: 1px solid #eee; text-align: center; }
@@ -56,6 +62,8 @@
     <input list="wp-towns" id="start-loc" placeholder="Pick Up Location">
     <input list="wp-towns" id="end-loc" placeholder="Drop Off Location">
     
+    <input type="number" id="manual-fare" placeholder="Manual Fare (Optional)">
+
     <div style="display:flex; gap:10px; align-items:center; margin:5px 0;">
         <label style="font-size:11px; font-weight:bold;">Wait Time:</label>
         <select id="wait-select" onchange="updateDisplay()">
@@ -68,15 +76,15 @@
 
     <div class="fare-calc-box">
         <div class="calc-grid">
-            <div><span class="calc-label">DISTANCE</span><span class="calc-val-big" id="disp-km">0.0 km</span></div>
-            <div style="border-top:1px solid #ddd; padding-top:10px;"><span class="calc-label">TOTAL FARE</span><span class="calc-val-big" id="disp-fare">Rs. 0</span></div>
+            <div><span class="calc-label">Distance: <span id="disp-km">0.0 km</span></span></div>
+            <div><span class="calc-label">TOTAL FARE</span><span class="calc-val-big" id="disp-fare">Rs. 0</span></div>
         </div>
     </div>
 
     <div class="btn-grid">
         <button class="btn-start" id="startBtn" onclick="startRide()">START RIDE</button>
         <button class="btn-end" onclick="endRide()">END RIDE</button>
-        <button class="btn-report" onclick="toggleSection('report-section')">REPORTS</button>
+        <button class="btn-report" onclick="toggleSection('report-section')">INCOME REPORTS</button>
         <button class="btn-history" onclick="toggleSection('history-section')">HISTORY</button>
         <button class="btn-new" onclick="location.reload()" style="grid-column: span 2;">+ NEW RIDE</button>
     </div>
@@ -87,30 +95,39 @@
             <h3 style="color:var(--primary); text-align:center;">Settings</h3>
             <label style="font-size:11px; font-weight:bold;">Logo Image:</label>
             <input type="file" id="logo-input" accept="image/*">
-            
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                <div><label style="font-size:10px;">Base (1st KM):</label><input type="number" id="set-base"></div>
-                <div><label style="font-size:10px;">Rate /KM:</label><input type="number" id="set-rate"></div>
-                <div><label style="font-size:10px;">Night Rate %:</label><input type="number" id="set-night" value="10"></div>
-                <div><label style="font-size:10px;">Wait Rate/Min:</label><input type="number" id="set-wait-rate" value="5"></div>
-            </div>
-
-            <label style="font-size:11px; font-weight:bold; margin-top:10px; display:block;">Town List:</label>
+            <label style="font-size:11px; font-weight:bold;">1st KM Rate (Base):</label>
+            <input type="number" id="set-base">
+            <label style="font-size:11px; font-weight:bold;">Next KM Rate:</label>
+            <input type="number" id="set-rate">
+            <label style="font-size:11px; font-weight:bold;">Wait Rate /Min:</label>
+            <input type="number" id="set-wait-rate">
+            <label style="font-size:11px; font-weight:bold;">Night %:</label>
+            <input type="number" id="set-night" value="10">
+            <label style="font-size:11px; font-weight:bold;">Town List:</label>
             <textarea id="set-towns" rows="3"></textarea>
             <button style="background:var(--secondary); width:100%; margin-top:10px;" onclick="saveSettings()">SAVE SETTINGS</button>
         </div>
     </div>
 
     <div id="report-section" class="section-card">
-        <div style="background:white; border-radius:20px; padding:15px; border:1px solid #eee;">
+        <div class="chart-container">
+            <div style="font-weight:bold; font-size:14px; margin-bottom:10px; display:flex; justify-content:space-between;">
+                <span>Daily Earnings</span>
+                <button onclick="downloadCSV()" style="padding:5px; font-size:10px; background:var(--primary); width:auto; border-radius:5px;">CSV ⬇</button>
+            </div>
             <canvas id="earningsChart" height="180"></canvas>
-            <div style="text-align:center; margin-top:10px; font-weight:bold;">Today: Rs. <span id="stat-today-main">0</span></div>
+            <div style="text-align:center; margin-top:10px; font-weight:bold; color:var(--primary);">Today: Rs. <span id="stat-today-main">0</span></div>
+            <div class="stats-grid">
+                <div class="stat-box">Today<b id="stat-today">Rs. 0</b></div>
+                <div class="stat-box">This Month<b id="stat-month">Rs. 0</b></div>
+            </div>
             <button style="background:var(--primary); width:100%; margin-top:10px; font-size:11px;" onclick="sendDailySummary()">SEND SUMMARY TO GMAIL</button>
         </div>
     </div>
 
-    <div id="history-section" class="section-card">
-        <div id="history-list" style="max-height:200px; overflow-y:auto; background:white; padding:10px; border-radius:15px; border:1px solid #eee;"></div>
+    <div id="history-section" class="section-card chart-container">
+        <div style="font-weight:bold; font-size:14px; margin-bottom:5px;">Travel History</div>
+        <div id="history-list" style="max-height:200px; overflow-y:auto;"></div>
     </div>
 </div>
 
@@ -134,16 +151,18 @@
 
 <script>
     let sTime, watchID, totalKm = 0, lastLat, lastLon, currentRID = "";
-    let RATE = 80, BASE = 100, NIGHT_PCT = 10, WAIT_RATE = 5, LOGO_DATA = "";
+    let RATE = 80, BASE = 100, WAIT_RATE = 5, NIGHT_PCT = 10, LOGO_DATA = "";
     
-    // v18 Original Settings + New Points
+    // 06. Full Town List (Restored)
+    const WP_TOWNS = "Colombo 01, Colombo 02, Colombo 03, Colombo 04, Colombo 05, Colombo 06, Colombo 07, Colombo 08, Colombo 09, Colombo 10, Colombo 11, Colombo 12, Colombo 13, Colombo 14, Colombo 15, Dehiwala, Mount Lavinia, Ratmalana, Moratuwa, Kesbewa, Piliyandala, Maharagama, Boralesgamuwa, Nugegoda, Kottawa, Pannipitiya, Homagama, Malabe, Kaduwela, Battaramulla, Athurugiriya, Hanwella, Avissawella, Gampaha, Negombo, Katunayake, Seeduwa, Ja-Ela, Kandana, Wattala, Kelaniya, Peliyagoda, Kiribathgoda, Kadawatha, Ragama, Minuwangoda, Veyangoda, Nittambuwa, Kalutara, Panadura, Wadduwa, Beruwala, Aluthgama, Horana, Bandaragama, Matugama, Agalawatte, Ingiriya";
+
     function loadSettings() {
-        let s = JSON.parse(localStorage.getItem('as4_v22_settings') || JSON.stringify({base:100, rate:80, night:10, wait:5, towns: "Colombo, Gampaha", logo:""}));
-        BASE = s.base; RATE = s.rate; NIGHT_PCT = s.night; WAIT_RATE = s.wait; LOGO_DATA = s.logo;
+        let s = JSON.parse(localStorage.getItem('as4_v23_settings') || JSON.stringify({base:100, rate:80, wait:5, night:10, towns: WP_TOWNS, logo:""}));
+        BASE = s.base; RATE = s.rate; WAIT_RATE = s.wait; NIGHT_PCT = s.night; LOGO_DATA = s.logo;
         document.getElementById('set-base').value = BASE;
         document.getElementById('set-rate').value = RATE;
-        document.getElementById('set-night').value = NIGHT_PCT;
         document.getElementById('set-wait-rate').value = WAIT_RATE;
+        document.getElementById('set-night').value = NIGHT_PCT;
         document.getElementById('set-towns').value = s.towns;
         if(LOGO_DATA) document.getElementById('main-logo-area').innerHTML = `<img src="${LOGO_DATA}" class="logo-img">`;
         document.getElementById('wp-towns').innerHTML = s.towns.split(',').map(t => `<option value="${t.trim()}">`).join('');
@@ -159,21 +178,20 @@
     }
 
     function finalizeSave() {
-        let s = {base: parseInt(document.getElementById('set-base').value), rate: parseInt(document.getElementById('set-rate').value), night: parseInt(document.getElementById('set-night').value), wait: parseInt(document.getElementById('set-wait-rate').value), towns: document.getElementById('set-towns').value, logo: LOGO_DATA};
-        localStorage.setItem('as4_v22_settings', JSON.stringify(s)); loadSettings(); toggleSection('settings-modal');
+        let s = {base: parseInt(document.getElementById('set-base').value), rate: parseInt(document.getElementById('set-rate').value), wait: parseInt(document.getElementById('set-wait-rate').value), night: parseInt(document.getElementById('set-night').value), towns: document.getElementById('set-towns').value, logo: LOGO_DATA};
+        localStorage.setItem('as4_v23_settings', JSON.stringify(s)); loadSettings(); toggleSection('settings-modal');
     }
 
-    // POINT 02 & 06: Enhanced Calculation Logic (Preserving v18 GPS)
     function updateDisplay() {
         let waitMins = parseInt(document.getElementById('wait-select').value);
         let fare = Math.round(BASE + (Math.max(0, totalKm - 1) * RATE) + (waitMins * WAIT_RATE));
-        
-        // POINT 02: Night Rate Auto Check
         let hour = new Date().getHours();
         if(hour >= 22 || hour < 5) fare += (fare * (NIGHT_PCT/100));
-
+        
         document.getElementById('disp-km').innerText = totalKm.toFixed(2) + " km";
-        document.getElementById('disp-fare').innerText = "Rs. " + Math.round(fare);
+        if(!document.getElementById('manual-fare').value) {
+            document.getElementById('disp-fare').innerText = "Rs. " + Math.round(fare);
+        }
     }
 
     function startRide() {
@@ -193,50 +211,61 @@
 
     function endRide() {
         navigator.geolocation.clearWatch(watchID);
-        let fare = document.getElementById('disp-fare').innerText;
+        let fare = document.getElementById('manual-fare').value ? parseInt(document.getElementById('manual-fare').value) : parseInt(document.getElementById('disp-fare').innerText.replace('Rs. ', ''));
         currentRID = `AS4-${Date.now().toString().slice(-6)}`;
         if(LOGO_DATA) document.getElementById('r-logo-area').innerHTML = `<img src="${LOGO_DATA}" style="width:70px;height:70px;border-radius:50%;margin-bottom:10px;">`;
-        document.getElementById('r-body').innerHTML = `<div class="r-row"><span>ID:</span><b>${currentRID}</b></div><div class="r-row"><span>KM:</span><b>${totalKm.toFixed(2)}</b></div><div class="r-row"><span>Wait:</span><b>${document.getElementById('wait-select').value}m</b></div>`;
-        document.getElementById('r-total').innerText = "Total: " + fare;
+        
+        // 04. Receipt Details (Restored v18 Style)
+        document.getElementById('r-body').innerHTML = `<div class="r-row"><span>ID:</span><b>${currentRID}</b></div><div class="r-row"><span>Route:</span><b>${document.getElementById('start-loc').value || 'Start'}➔${document.getElementById('end-loc').value || 'End'}</b></div><div class="r-row"><span>KM:</span><b>${totalKm.toFixed(2)}</b></div><div class="r-row"><span>Time:</span><b>${sTime.toLocaleTimeString()}</b></div><div class="r-row"><span>Wait:</span><b>${document.getElementById('wait-select').value} min</b></div>`;
+        document.getElementById('r-total').innerText = "Total: Rs. " + fare;
+        
+        document.getElementById('qrcode').innerHTML = ""; 
         new QRCode(document.getElementById("qrcode"), { text: currentRID, width: 80, height: 80 });
         document.getElementById('receiptModal').style.display = "flex";
-        saveData(fare.replace('Rs. ', ''));
+        saveRide(fare, totalKm, document.getElementById('start-loc').value, document.getElementById('end-loc').value, currentRID);
     }
 
-    // POINT 03: Gmail Functions
-    function sendGmailReceipt() {
-        let email = document.getElementById('cust-email').value;
-        let body = `AS4 TAXI Receipt\nID: ${currentRID}\nRoute: ${document.getElementById('start-loc').value} to ${document.getElementById('end-loc').value}\nKM: ${totalKm.toFixed(2)}\nTotal Fare: ${document.getElementById('r-total').innerText}`;
-        window.location.href = `mailto:${email}?subject=Taxi Receipt ${currentRID}&body=${encodeURIComponent(body)}`;
-    }
-
-    function sendDailySummary() {
-        let h = JSON.parse(localStorage.getItem('as4_v22_data') || '[]');
-        let today = h.filter(i => new Date(i.time).toDateString() === new Date().toDateString());
-        let total = today.reduce((a, b) => a + b.f, 0);
-        let body = `AS4 TAXI Daily Summary (${new Date().toLocaleDateString()})\n\nTotal Rides: ${today.length}\nTotal Income: Rs. ${total}\n\nDrive Safe!`;
-        window.location.href = `mailto:?subject=Daily Summary ${new Date().toLocaleDateString()}&body=${encodeURIComponent(body)}`;
-    }
-
-    function saveData(f) {
-        let h = JSON.parse(localStorage.getItem('as4_v22_data') || '[]');
-        h.push({f: parseInt(f), d: totalKm, time: Date.now()});
-        localStorage.setItem('as4_v22_data', JSON.stringify(h)); updateUI();
+    function saveRide(f, d, from, to, rid) {
+        let h = JSON.parse(localStorage.getItem('as4_v23_data') || '[]');
+        h.push({f, d, from, to, rid, time: Date.now()});
+        localStorage.setItem('as4_v23_data', JSON.stringify(h)); updateUI();
     }
 
     function toggleSection(id) { let s = document.getElementById(id); s.style.display = (s.style.display === "flex" || s.style.display === "block") ? "none" : (id.includes('modal') ? "flex" : "block"); }
     function closeModal() { document.getElementById('receiptModal').style.display = "none"; }
     
     function updateUI() {
-        let h = JSON.parse(localStorage.getItem('as4_v22_data') || '[]');
-        let today = h.filter(i => new Date(i.time).toDateString() === new Date().toDateString()).reduce((a, b) => a + b.f, 0);
-        document.getElementById('stat-today-main').innerText = today;
+        let h = JSON.parse(localStorage.getItem('as4_v23_data') || '[]');
+        let todayVal = h.filter(i => new Date(i.time).toDateString() === new Date().toDateString()).reduce((a, b) => a + b.f, 0);
+        document.getElementById('stat-today').innerText = "Rs. " + todayVal;
+        document.getElementById('stat-today-main').innerText = todayVal;
+        document.getElementById('stat-month').innerText = "Rs. " + h.reduce((a, b) => a + b.f, 0);
         
         let dayData = [0,0,0,0,0,0,0]; h.forEach(i => { let d = new Date(i.time).getDay(); dayData[d === 0 ? 6 : d-1] += i.f; });
         if(window.mChart) window.mChart.destroy();
-        window.mChart = new Chart(document.getElementById('earningsChart').getContext('2d'), { type: 'bar', data: { labels: ['M','T','W','T','F','S','S'], datasets: [{ data: dayData, backgroundColor: '#1a4a9e' }] }, options: { plugins: { legend: { display: false } } } });
+        window.mChart = new Chart(document.getElementById('earningsChart').getContext('2d'), { type: 'bar', data: { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets: [{ data: dayData, backgroundColor: '#1a4a9e' }] }, options: { plugins: { legend: { display: false } } } });
 
-        document.getElementById('history-list').innerHTML = h.slice().reverse().map(i => `<div class="history-item"><b>${new Date(i.time).toLocaleTimeString()}</b> - ${i.d.toFixed(2)}km - <b>Rs. ${i.f}</b></div>`).join('');
+        // 03. History Details (Restored v18 Style)
+        document.getElementById('history-list').innerHTML = h.slice().reverse().map(i => `<div class="history-item"><div style="display:flex;justify-content:space-between;"><b>${i.rid}</b><span>${new Date(i.time).toLocaleDateString()}</span></div><div style="color:var(--primary);font-weight:bold;">${i.from || 'Start'}➔${i.to || 'End'}</div><div style="display:flex;justify-content:space-between;"><span>${i.d.toFixed(2)} km</span><b>Rs. ${i.f}</b></div></div>`).join('');
+    }
+
+    function downloadCSV() {
+        let h = JSON.parse(localStorage.getItem('as4_v23_data') || '[]');
+        let csv = "ID,Date,KM,Fare\n"; h.forEach(i => csv += `${i.rid},${new Date(i.time).toLocaleDateString()},${i.d.toFixed(2)},${i.f}\n`);
+        const a = document.createElement('a'); a.href = window.URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `Report_${new Date().toISOString().split('T')[0]}.csv`; a.click();
+    }
+
+    function sendGmailReceipt() {
+        let email = document.getElementById('cust-email').value;
+        let body = `AS4 TAXI Receipt\nID: ${currentRID}\nKM: ${totalKm.toFixed(2)}\nFare: ${document.getElementById('r-total').innerText}`;
+        window.location.href = `mailto:${email}?subject=Taxi Receipt ${currentRID}&body=${encodeURIComponent(body)}`;
+    }
+
+    function sendDailySummary() {
+        let h = JSON.parse(localStorage.getItem('as4_v23_data') || '[]');
+        let today = h.filter(i => new Date(i.time).toDateString() === new Date().toDateString());
+        let body = `Daily Summary (${new Date().toLocaleDateString()})\nTotal Rides: ${today.length}\nTotal Income: Rs. ${today.reduce((a,b)=>a+b.f,0)}`;
+        window.location.href = `mailto:?subject=Daily Summary&body=${encodeURIComponent(body)}`;
     }
 
     async function downloadPDF() { const { jsPDF } = window.jspdf; const canvas = await html2canvas(document.getElementById('receipt-render')); const pdf = new jsPDF('p', 'mm', [80, 160]); pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 80, 160); pdf.save(`${currentRID}.pdf`); }
