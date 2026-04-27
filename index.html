@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AS4 TAXI - Ultra Pro v15</title>
+    <title>AS4 TAXI - Ultra Pro v16</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -78,14 +78,14 @@
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <div class="close-btn" onclick="toggleSection('settings-modal')">X</div>
-            <h3 style="color:var(--primary); text-align:center;">Fare & Towns Settings</h3>
-            <label style="font-size:12px; font-weight:bold;">1st KM Fare (Base Rate):</label>
+            <h3 style="color:var(--primary); text-align:center;">Settings</h3>
+            <label style="font-size:12px; font-weight:bold;">1st KM Rate:</label>
             <input type="number" id="set-base">
-            <label style="font-size:12px; font-weight:bold; margin-top:10px; display:block;">Next KM Rate:</label>
+            <label style="font-size:12px; font-weight:bold;">Next KM Rate:</label>
             <input type="number" id="set-rate">
-            <label style="font-size:12px; font-weight:bold; margin-top:10px; display:block;">Town List (Separate by comma):</label>
-            <textarea id="set-towns" rows="4" placeholder="Colombo, Pettah, Kottawa..."></textarea>
-            <button style="background:var(--secondary); width:100%; margin-top:15px;" onclick="saveSettings()">SAVE SETTINGS</button>
+            <label style="font-size:12px; font-weight:bold;">Western Province Towns:</label>
+            <textarea id="set-towns" rows="5"></textarea>
+            <button style="background:var(--secondary); width:100%; margin-top:10px;" onclick="saveSettings()">SAVE SETTINGS</button>
         </div>
     </div>
 
@@ -126,25 +126,25 @@
 <script>
     let sTime, watchID, totalKm = 0, lastLat, lastLon, currentRID = "";
     let RATE = 80, BASE = 100;
-    const DEFAULT_TOWNS = "Colombo Fort, Pettah, Kollupitiya, Bambalapitiya, Wellawatte, Nugegoda, Maharagama, Kottawa, Homagama, Gampaha, Negombo, Wattala, Kalutara, Panadura, Horana";
+    
+    // Western Province Master List
+    const WP_TOWNS = "Colombo 01, Colombo 02, Colombo 03, Colombo 04, Colombo 05, Colombo 06, Colombo 07, Colombo 08, Colombo 09, Colombo 10, Colombo 11, Colombo 12, Colombo 13, Colombo 14, Colombo 15, Dehiwala, Mount Lavinia, Ratmalana, Moratuwa, Kesbewa, Piliyandala, Maharagama, Boralesgamuwa, Nugegoda, Kottawa, Pannipitiya, Homagama, Malabe, Kaduwela, Battaramulla, Athurugiriya, Hanwella, Avissawella, Gampaha, Negombo, Katunayake, Seeduwa, Ja-Ela, Kandana, Wattala, Kelaniya, Peliyagoda, Kiribathgoda, Kadawatha, Ragama, Minuwangoda, Veyangoda, Nittambuwa, Kalutara, Panadura, Wadduwa, Beruwala, Aluthgama, Horana, Bandaragama, Matugama, Agalawatte, Ingiriya";
 
     function loadSettings() {
-        let s = JSON.parse(localStorage.getItem('as4_settings') || JSON.stringify({base:100, rate:80, towns: DEFAULT_TOWNS}));
+        let s = JSON.parse(localStorage.getItem('as4_settings') || JSON.stringify({base:100, rate:80, towns: WP_TOWNS}));
         BASE = s.base; RATE = s.rate;
         document.getElementById('set-base').value = BASE;
         document.getElementById('set-rate').value = RATE;
         document.getElementById('set-towns').value = s.towns;
         document.getElementById('disp-rate-info').innerText = "Rs. " + RATE;
-        
-        let dl = document.getElementById('wp-towns');
-        dl.innerHTML = s.towns.split(',').map(t => `<option value="${t.trim()}">`).join('');
+        document.getElementById('wp-towns').innerHTML = s.towns.split(',').map(t => `<option value="${t.trim()}">`).join('');
     }
 
     function saveSettings() {
-        let townsVal = document.getElementById('set-towns').value;
+        let tVal = document.getElementById('set-towns').value;
         BASE = parseInt(document.getElementById('set-base').value);
         RATE = parseInt(document.getElementById('set-rate').value);
-        localStorage.setItem('as4_settings', JSON.stringify({base: BASE, rate: RATE, towns: townsVal}));
+        localStorage.setItem('as4_settings', JSON.stringify({base: BASE, rate: RATE, towns: tVal}));
         loadSettings();
         toggleSection('settings-modal');
     }
@@ -174,10 +174,10 @@
     }
 
     function genReceiptID() {
-        let h = JSON.parse(localStorage.getItem('as4_v15_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v16_data') || '[]');
         let d = new Date();
-        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        return `${d.getDate()}${monthNames[d.getMonth()]}-AS4-${(h.length + 1).toString().padStart(5, '0')}`;
+        const m = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        return `${d.getDate()}${m[d.getMonth()]}-AS4-${(h.length + 1).toString().padStart(5, '0')}`;
     }
 
     function endRide() {
@@ -195,9 +195,9 @@
     }
 
     function saveRide(f, d, from, to, rid) {
-        let h = JSON.parse(localStorage.getItem('as4_v15_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v16_data') || '[]');
         h.push({f, d, from, to, rid, time: new Date().getTime()});
-        localStorage.setItem('as4_v15_data', JSON.stringify(h));
+        localStorage.setItem('as4_v16_data', JSON.stringify(h));
         updateUI();
     }
 
@@ -209,7 +209,7 @@
     function closeModal() { document.getElementById('receiptModal').style.display = "none"; }
 
     function updateUI() {
-        let h = JSON.parse(localStorage.getItem('as4_v15_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v16_data') || '[]');
         let tVal = h.filter(i => new Date(i.time).toDateString() === new Date().toDateString()).reduce((a, b) => a + b.f, 0);
         document.getElementById('stat-today').innerText = "Rs. " + tVal; 
         document.getElementById('stat-today-main').innerText = tVal;
@@ -223,7 +223,7 @@
     }
 
     function downloadCSV() {
-        let h = JSON.parse(localStorage.getItem('as4_v15_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v16_data') || '[]');
         let csv = "ID,Date,KM,Fare\n"; h.forEach(i => csv += `${i.rid},${new Date(i.time).toLocaleDateString()},${i.d.toFixed(2)},${i.f}\n`);
         const a = document.createElement('a'); a.href = window.URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `Report_${new Date().toISOString().split('T')[0]}.csv`; a.click();
     }
