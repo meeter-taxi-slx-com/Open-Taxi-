@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AS4 TAXI - Ultra Pro v17</title>
+    <title>AS4 TAXI - Ultra Pro v18</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -13,7 +13,7 @@
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 15px; display: flex; justify-content: center; }
         .app-container { background: white; width: 100%; max-width: 420px; border-radius: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); padding: 25px; }
         .logo-section { text-align: center; margin-bottom: 20px; position: relative; }
-        .logo-img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); margin-bottom: 5px; }
+        .logo-img { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); margin-bottom: 5px; }
         .logo-circle { background: var(--primary); color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 5px; font-weight: bold; border: 4px solid #fff; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .brand-name { color: var(--primary); font-size: 22px; font-weight: 900; }
         .settings-icon { position: absolute; right: 0; top: 10px; cursor: pointer; font-size: 20px; color: var(--primary); }
@@ -80,15 +80,20 @@
         <div class="modal-content">
             <div class="close-btn" onclick="toggleSection('settings-modal')">X</div>
             <h3 style="color:var(--primary); text-align:center;">Settings</h3>
-            <label style="font-size:11px; font-weight:bold;">Logo URL (Optional):</label>
-            <input type="text" id="set-logo" placeholder="Paste Image Link Here">
-            <label style="font-size:11px; font-weight:bold;">1st KM Rate:</label>
+            
+            <label style="font-size:11px; font-weight:bold;">Choose Logo Image:</label>
+            <input type="file" id="logo-input" accept="image/*" style="background:white; border:1px dashed var(--primary);">
+            
+            <label style="font-size:11px; font-weight:bold; margin-top:10px; display:block;">1st KM Rate (Base):</label>
             <input type="number" id="set-base">
+            
             <label style="font-size:11px; font-weight:bold;">Next KM Rate:</label>
             <input type="number" id="set-rate">
-            <label style="font-size:11px; font-weight:bold;">Western Province Towns:</label>
-            <textarea id="set-towns" rows="5"></textarea>
-            <button style="background:var(--secondary); width:100%; margin-top:10px;" onclick="saveSettings()">SAVE SETTINGS</button>
+            
+            <label style="font-size:11px; font-weight:bold;">Town List:</label>
+            <textarea id="set-towns" rows="4"></textarea>
+            
+            <button style="background:var(--secondary); width:100%; margin-top:10px;" onclick="saveSettings()">SAVE ALL SETTINGS</button>
         </div>
     </div>
 
@@ -129,31 +134,43 @@
 
 <script>
     let sTime, watchID, totalKm = 0, lastLat, lastLon, currentRID = "";
-    let RATE = 80, BASE = 100, LOGO_URL = "";
+    let RATE = 80, BASE = 100, LOGO_DATA = "";
     
     const WP_TOWNS = "Colombo 01, Colombo 02, Colombo 03, Colombo 04, Colombo 05, Colombo 06, Colombo 07, Colombo 08, Colombo 09, Colombo 10, Colombo 11, Colombo 12, Colombo 13, Colombo 14, Colombo 15, Dehiwala, Mount Lavinia, Ratmalana, Moratuwa, Kesbewa, Piliyandala, Maharagama, Boralesgamuwa, Nugegoda, Kottawa, Pannipitiya, Homagama, Malabe, Kaduwela, Battaramulla, Athurugiriya, Hanwella, Avissawella, Gampaha, Negombo, Katunayake, Seeduwa, Ja-Ela, Kandana, Wattala, Kelaniya, Peliyagoda, Kiribathgoda, Kadawatha, Ragama, Minuwangoda, Veyangoda, Nittambuwa, Kalutara, Panadura, Wadduwa, Beruwala, Aluthgama, Horana, Bandaragama, Matugama, Agalawatte, Ingiriya";
 
     function loadSettings() {
-        let s = JSON.parse(localStorage.getItem('as4_settings') || JSON.stringify({base:100, rate:80, towns: WP_TOWNS, logo:""}));
-        BASE = s.base; RATE = s.rate; LOGO_URL = s.logo;
+        let s = JSON.parse(localStorage.getItem('as4_settings_v18') || JSON.stringify({base:100, rate:80, towns: WP_TOWNS, logo:""}));
+        BASE = s.base; RATE = s.rate; LOGO_DATA = s.logo;
         document.getElementById('set-base').value = BASE;
         document.getElementById('set-rate').value = RATE;
         document.getElementById('set-towns').value = s.towns;
-        document.getElementById('set-logo').value = LOGO_URL;
         document.getElementById('disp-rate-info').innerText = "Rs. " + RATE;
         document.getElementById('wp-towns').innerHTML = s.towns.split(',').map(t => `<option value="${t.trim()}">`).join('');
         
-        if(LOGO_URL) {
-            document.getElementById('main-logo-area').innerHTML = `<img src="${LOGO_URL}" class="logo-img" onerror="this.src=''">`;
+        if(LOGO_DATA) {
+            document.getElementById('main-logo-area').innerHTML = `<img src="${LOGO_DATA}" class="logo-img">`;
         }
     }
 
     function saveSettings() {
+        const fileInput = document.getElementById('logo-input');
+        if(fileInput.files && fileInput.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                LOGO_DATA = e.target.result;
+                finalizeSave();
+            };
+            reader.readAsDataURL(fileInput.files[0]);
+        } else {
+            finalizeSave();
+        }
+    }
+
+    function finalizeSave() {
         let tVal = document.getElementById('set-towns').value;
-        let lVal = document.getElementById('set-logo').value;
         BASE = parseInt(document.getElementById('set-base').value);
         RATE = parseInt(document.getElementById('set-rate').value);
-        localStorage.setItem('as4_settings', JSON.stringify({base: BASE, rate: RATE, towns: tVal, logo: lVal}));
+        localStorage.setItem('as4_settings_v18', JSON.stringify({base: BASE, rate: RATE, towns: tVal, logo: LOGO_DATA}));
         loadSettings();
         toggleSection('settings-modal');
     }
@@ -183,7 +200,7 @@
     }
 
     function genReceiptID() {
-        let h = JSON.parse(localStorage.getItem('as4_v17_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v18_data') || '[]');
         let d = new Date();
         const m = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         return `${d.getDate()}${m[d.getMonth()]}-AS4-${(h.length + 1).toString().padStart(5, '0')}`;
@@ -197,10 +214,8 @@
         let to = document.getElementById('end-loc').value || "Destination";
         currentRID = genReceiptID();
         
-        if(LOGO_URL) {
-            document.getElementById('r-logo-area').innerHTML = `<img src="${LOGO_URL}" style="width:80px; height:80px; border-radius:50%; object-fit:cover; margin-bottom:10px;">`;
-        } else {
-            document.getElementById('r-logo-area').innerHTML = "";
+        if(LOGO_DATA) {
+            document.getElementById('r-logo-area').innerHTML = `<img src="${LOGO_DATA}" style="width:70px; height:70px; border-radius:50%; object-fit:cover; margin-bottom:10px;">`;
         }
         
         document.getElementById('r-body').innerHTML = `<div class="r-row"><span>ID:</span><b>${currentRID}</b></div><div class="r-row"><span>Route:</span><b>${from}➔${to}</b></div><div class="r-row"><span>KM:</span><b>${totalKm.toFixed(2)}</b></div><div class="r-row"><span>Time:</span><b>${sTime.toLocaleTimeString()}</b></div>`;
@@ -211,9 +226,9 @@
     }
 
     function saveRide(f, d, from, to, rid) {
-        let h = JSON.parse(localStorage.getItem('as4_v17_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v18_data') || '[]');
         h.push({f, d, from, to, rid, time: new Date().getTime()});
-        localStorage.setItem('as4_v17_data', JSON.stringify(h));
+        localStorage.setItem('as4_v18_data', JSON.stringify(h));
         updateUI();
     }
 
@@ -225,7 +240,7 @@
     function closeModal() { document.getElementById('receiptModal').style.display = "none"; }
 
     function updateUI() {
-        let h = JSON.parse(localStorage.getItem('as4_v17_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v18_data') || '[]');
         let tVal = h.filter(i => new Date(i.time).toDateString() === new Date().toDateString()).reduce((a, b) => a + b.f, 0);
         document.getElementById('stat-today').innerText = "Rs. " + tVal; 
         document.getElementById('stat-today-main').innerText = tVal;
@@ -239,21 +254,21 @@
     }
 
     function downloadCSV() {
-        let h = JSON.parse(localStorage.getItem('as4_v17_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v18_data') || '[]');
         let csv = "ID,Date,KM,Fare\n"; h.forEach(i => csv += `${i.rid},${new Date(i.time).toLocaleDateString()},${i.d.toFixed(2)},${i.f}\n`);
         const a = document.createElement('a'); a.href = window.URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `Report_${new Date().toISOString().split('T')[0]}.csv`; a.click();
     }
 
     async function downloadPDF() { 
         const { jsPDF } = window.jspdf; 
-        const canvas = await html2canvas(document.getElementById('receipt-render'), {useCORS: true}); 
+        const canvas = await html2canvas(document.getElementById('receipt-render')); 
         const pdf = new jsPDF('p', 'mm', [80, 160]); 
         pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 80, 160); 
         pdf.save(`${currentRID}.pdf`); 
     }
     
     async function share() { 
-        const canvas = await html2canvas(document.getElementById('receipt-render'), {useCORS: true}); 
+        const canvas = await html2canvas(document.getElementById('receipt-render')); 
         canvas.toBlob(b => { 
             const f = new File([b], `${currentRID}.png`, {type:'image/png'}); 
             if(navigator.share) navigator.share({files:[f]}); 
