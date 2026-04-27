@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AS4 TAXI - Ultra Pro v20</title>
+    <title>AS4 TAXI - Ultra Pro v21</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -18,10 +18,13 @@
         .brand-name { color: var(--primary); font-size: 22px; font-weight: 900; }
         .settings-icon { position: absolute; right: 0; top: 10px; cursor: pointer; font-size: 20px; color: var(--primary); }
         input, textarea, select { width: 100%; padding: 12px; margin: 6px 0; border: 1px solid #e0e0e0; border-radius: 12px; font-size: 14px; box-sizing: border-box; background: var(--gray); font-family: inherit; }
-        .fare-calc-box { background: var(--gray); border-radius: 15px; padding: 15px; margin: 10px 0; border: 1px solid #eee; text-align: center; }
-        .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .calc-label { font-size: 12px; color: #7f8c8d; font-weight: bold; }
-        .calc-val-big { font-weight: 900; color: var(--primary); display: block; font-size: 28px; } /* ලොකු අකුරු මෙන්න */
+        
+        /* v21 Special: Big Fonts for Visibility */
+        .fare-calc-box { background: var(--gray); border-radius: 15px; padding: 20px; margin: 10px 0; border: 1px solid #eee; text-align: center; }
+        .calc-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        .calc-label { font-size: 14px; color: #7f8c8d; font-weight: bold; text-transform: uppercase; }
+        .calc-val-big { font-weight: 900; color: var(--primary); display: block; font-size: 42px; line-height: 1; }
+        
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
         button { border: none; border-radius: 12px; font-size: 13px; font-weight: bold; color: white; cursor: pointer; padding: 14px; }
         .btn-start { background: linear-gradient(135deg, #2ecc71, #27ae60); }
@@ -29,16 +32,15 @@
         .btn-report { background: #34495e; }
         .btn-history { background: #8e44ad; }
         .btn-new { background: #3498db; }
+        
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
         .modal-content { background: white; width: 85%; max-width: 360px; border-radius: 25px; padding: 30px 20px; position: relative; margin: auto; max-height: 90vh; overflow-y: auto; }
         #receipt-render { background: white; padding: 15px; border-radius: 15px; border: 1px solid #eee; text-align: center; }
         .r-header { background: black; color: white; padding: 8px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 10px; }
         .r-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f9f9f9; font-size: 12px; text-align: left; }
         .r-total-box { background: var(--primary); color: white; text-align: center; padding: 12px; border-radius: 8px; font-size: 18px; font-weight: bold; margin: 10px 0; }
-        .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; }
         .close-btn { position: absolute; top: 10px; right: 10px; background: var(--accent); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; z-index: 1001; }
         .section-card { display: none; }
-        .history-item { border-bottom: 1px solid #eee; padding: 10px 0; font-size: 11px; }
     </style>
 </head>
 <body>
@@ -50,14 +52,14 @@
         <div class="settings-icon" onclick="toggleSection('settings-modal')">⚙️</div>
     </div>
     
-    <input type="email" id="cust-email" placeholder="Customer Email (Optional)">
+    <input type="tel" id="mobile" placeholder="Customer Mobile (Optional)">
     <input list="wp-towns" id="start-loc" placeholder="Pick Up Location">
     <input list="wp-towns" id="end-loc" placeholder="Drop Off Location">
     
-    <div style="display:flex; gap:5px; align-items:center;">
-        <label style="font-size:11px; font-weight:bold; white-space:nowrap;">Wait (Mins):</label>
+    <div style="display:flex; gap:10px; align-items:center; margin:5px 0;">
+        <label style="font-size:12px; font-weight:bold; color:var(--dark);">Waiting (Mins):</label>
         <select id="wait-select" onchange="updateDisplay()">
-            <option value="0">0 min</option>
+            <option value="0">None</option>
             <script>for(let i=1;i<=60;i++) document.write(`<option value="${i}">${i} min</option>`);</script>
         </select>
     </div>
@@ -66,15 +68,15 @@
 
     <div class="fare-calc-box">
         <div class="calc-grid">
-            <div><span class="calc-label">DISTANCE</span><span class="calc-val-big" id="disp-km">0.0 km</span></div>
-            <div><span class="calc-label">TOTAL FARE</span><span class="calc-val-big" id="disp-fare">Rs. 0</span></div>
+            <div><span class="calc-label">Distance</span><span class="calc-val-big" id="disp-km">0.0 km</span></div>
+            <div style="border-top: 1px solid #ddd; padding-top: 10px;"><span class="calc-label">Total Fare</span><span class="calc-val-big" id="disp-fare">Rs. 0</span></div>
         </div>
     </div>
 
     <div class="btn-grid">
         <button class="btn-start" id="startBtn" onclick="startRide()">START RIDE</button>
         <button class="btn-end" onclick="endRide()">END RIDE</button>
-        <button class="btn-report" onclick="toggleSection('report-section')">REPORTS</button>
+        <button class="btn-report" onclick="toggleSection('report-section')">INCOME REPORTS</button>
         <button class="btn-history" onclick="toggleSection('history-section')">HISTORY</button>
         <button class="btn-new" onclick="location.reload()" style="grid-column: span 2;">+ NEW RIDE</button>
     </div>
@@ -83,14 +85,14 @@
         <div class="modal-content">
             <div class="close-btn" onclick="toggleSection('settings-modal')">X</div>
             <h3 style="color:var(--primary); text-align:center;">Settings</h3>
-            <label style="font-size:11px; font-weight:bold;">Logo:</label>
+            <label style="font-size:11px; font-weight:bold;">Choose Logo:</label>
             <input type="file" id="logo-input" accept="image/*">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                <div><label style="font-size:10px;">Base:</label><input type="number" id="set-base"></div>
-                <div><label style="font-size:10px;">Rate/KM:</label><input type="number" id="set-rate"></div>
-                <div><label style="font-size:10px;">Night %:</label><input type="number" id="set-night"></div>
-                <div><label style="font-size:10px;">Wait/Min:</label><input type="number" id="set-wait-rate"></div>
-            </div>
+            <label style="font-size:11px; font-weight:bold;">1st KM Rate:</label>
+            <input type="number" id="set-base">
+            <label style="font-size:11px; font-weight:bold;">Next KM Rate:</label>
+            <input type="number" id="set-rate">
+            <label style="font-size:11px; font-weight:bold;">Waiting Rate /Min:</label>
+            <input type="number" id="set-wait-rate" value="5">
             <label style="font-size:11px; font-weight:bold;">Towns:</label>
             <textarea id="set-towns" rows="3"></textarea>
             <button style="background:var(--secondary); width:100%; margin-top:10px;" onclick="saveSettings()">SAVE SETTINGS</button>
@@ -101,7 +103,6 @@
         <canvas id="earningsChart" height="180"></canvas>
         <div style="text-align:center; margin-top:10px; font-weight:bold; color:var(--primary);">Today: Rs. <span id="stat-today-main">0</span></div>
     </div>
-
     <div id="history-section" class="section-card chart-container">
         <div id="history-list" style="max-height:200px; overflow-y:auto;"></div>
     </div>
@@ -117,49 +118,52 @@
             <div class="r-total-box" id="r-total"></div>
             <div id="qrcode" style="display:flex; justify-content:center; margin:10px;"></div>
         </div>
-        <div class="modal-actions">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:15px;">
             <button style="background:#2ecc71;" onclick="share()">WHATSAPP</button>
-            <button style="background:#1a4a9e;" onclick="sendGmail()">GMAIL</button>
-            <button style="background:#e67e22; grid-column: span 2;" onclick="downloadPDF()">SAVE PDF</button>
+            <button style="background:#e67e22;" onclick="downloadPDF()">SAVE PDF</button>
         </div>
     </div>
 </div>
 
 <script>
     let sTime, watchID, totalKm = 0, lastLat, lastLon, currentRID = "";
-    let RATE = 80, BASE = 100, NIGHT_PCT = 10, WAIT_RATE = 5, LOGO_DATA = "";
-
+    let RATE = 80, BASE = 100, WAIT_RATE = 5, LOGO_DATA = "";
+    
+    // Exact v18 Logic
     function loadSettings() {
-        let s = JSON.parse(localStorage.getItem('as4_settings_v20') || JSON.stringify({base:100, rate:80, night:10, wait:5, towns: "Colombo, Gampaha, Kottawa", logo:""}));
-        BASE = s.base; RATE = s.rate; NIGHT_PCT = s.night; WAIT_RATE = s.wait; LOGO_DATA = s.logo;
-        document.getElementById('set-base').value = BASE; document.getElementById('set-rate').value = RATE;
-        document.getElementById('set-night').value = NIGHT_PCT; document.getElementById('set-wait-rate').value = WAIT_RATE;
+        let s = JSON.parse(localStorage.getItem('as4_settings_v21') || JSON.stringify({base:100, rate:80, wait:5, towns: "Colombo, Kottawa, Gampaha", logo:""}));
+        BASE = s.base; RATE = s.rate; WAIT_RATE = s.wait || 5; LOGO_DATA = s.logo;
+        document.getElementById('set-base').value = BASE;
+        document.getElementById('set-rate').value = RATE;
+        document.getElementById('set-wait-rate').value = WAIT_RATE;
         document.getElementById('set-towns').value = s.towns;
         if(LOGO_DATA) document.getElementById('main-logo-area').innerHTML = `<img src="${LOGO_DATA}" class="logo-img">`;
         document.getElementById('wp-towns').innerHTML = s.towns.split(',').map(t => `<option value="${t.trim()}">`).join('');
     }
 
     function saveSettings() {
-        const f = document.getElementById('logo-input');
-        if(f.files[0]) {
-            const r = new FileReader(); r.onload = e => { LOGO_DATA = e.target.result; finalizeSave(); }; r.readAsDataURL(f.files[0]);
+        const fileInput = document.getElementById('logo-input');
+        if(fileInput.files[0]) {
+            const reader = new FileReader();
+            reader.onload = e => { LOGO_DATA = e.target.result; finalizeSave(); };
+            reader.readAsDataURL(fileInput.files[0]);
         } else finalizeSave();
     }
 
     function finalizeSave() {
-        let s = {base: parseInt(document.getElementById('set-base').value), rate: parseInt(document.getElementById('set-rate').value), night: parseInt(document.getElementById('set-night').value), wait: parseInt(document.getElementById('set-wait-rate').value), towns: document.getElementById('set-towns').value, logo: LOGO_DATA};
-        localStorage.setItem('as4_settings_v20', JSON.stringify(s)); loadSettings(); toggleSection('settings-modal');
+        let s = {base: parseInt(document.getElementById('set-base').value), rate: parseInt(document.getElementById('set-rate').value), wait: parseInt(document.getElementById('set-wait-rate').value), towns: document.getElementById('set-towns').value, logo: LOGO_DATA};
+        localStorage.setItem('as4_settings_v21', JSON.stringify(s));
+        loadSettings(); toggleSection('settings-modal');
     }
 
     function startRide() {
-        if(!sTime) {
-            sTime = new Date(); document.getElementById('startBtn').innerText = "RIDE ACTIVE ✅";
-            watchID = navigator.geolocation.watchPosition(pos => {
-                if(lastLat) totalKm += calcDist(lastLat, lastLon, pos.coords.latitude, pos.coords.longitude);
-                lastLat = pos.coords.latitude; lastLon = pos.coords.longitude;
-                updateDisplay();
-            }, null, {enableHighAccuracy: true});
-        }
+        if (!navigator.geolocation) return alert("GPS Error");
+        sTime = new Date(); document.getElementById('startBtn').innerText = "RIDE ACTIVE ✅";
+        watchID = navigator.geolocation.watchPosition(pos => {
+            if (lastLat) totalKm += calcDist(lastLat, lastLon, pos.coords.latitude, pos.coords.longitude);
+            lastLat = pos.coords.latitude; lastLon = pos.coords.longitude;
+            updateDisplay();
+        }, null, {enableHighAccuracy: true});
     }
 
     function calcDist(lat1, lon1, lat2, lon2) {
@@ -171,40 +175,32 @@
     function updateDisplay() {
         let waitMins = parseInt(document.getElementById('wait-select').value);
         let fare = Math.round(BASE + (Math.max(0, totalKm - 1) * RATE) + (waitMins * WAIT_RATE));
-        let hour = new Date().getHours();
-        if(hour >= 22 || hour < 5) fare += (fare * (NIGHT_PCT/100));
         document.getElementById('disp-km').innerText = totalKm.toFixed(2) + " km";
-        document.getElementById('disp-fare').innerText = "Rs. " + Math.round(fare);
+        document.getElementById('disp-fare').innerText = "Rs. " + fare;
     }
 
     function endRide() {
         navigator.geolocation.clearWatch(watchID);
-        let finalFare = document.getElementById('disp-fare').innerText;
+        let fare = document.getElementById('disp-fare').innerText;
         currentRID = `AS4-${Date.now().toString().slice(-6)}`;
         if(LOGO_DATA) document.getElementById('r-logo-area').innerHTML = `<img src="${LOGO_DATA}" style="width:70px;height:70px;border-radius:50%;margin-bottom:10px;">`;
         document.getElementById('r-body').innerHTML = `<div class="r-row"><span>ID:</span><b>${currentRID}</b></div><div class="r-row"><span>Route:</span><b>${document.getElementById('start-loc').value || 'Start'}➔${document.getElementById('end-loc').value || 'End'}</b></div><div class="r-row"><span>KM:</span><b>${totalKm.toFixed(2)}</b></div><div class="r-row"><span>Wait:</span><b>${document.getElementById('wait-select').value}m</b></div>`;
-        document.getElementById('r-total').innerText = "Total: " + finalFare;
+        document.getElementById('r-total').innerText = "Total: " + fare;
         new QRCode(document.getElementById("qrcode"), { text: currentRID, width: 80, height: 80 });
         document.getElementById('receiptModal').style.display = "flex";
-        saveData(finalFare.replace('Rs. ', ''));
+        saveRide(fare.replace('Rs. ', ''));
     }
 
-    function sendGmail() {
-        let email = document.getElementById('cust-email').value;
-        let body = `AS4 TAXI Receipt\nID: ${currentRID}\nKM: ${totalKm.toFixed(2)}\nFare: ${document.getElementById('r-total').innerText}`;
-        window.location.href = `mailto:${email}?subject=Taxi Receipt ${currentRID}&body=${encodeURIComponent(body)}`;
-    }
-
-    function saveData(f) {
-        let h = JSON.parse(localStorage.getItem('as4_v20_data') || '[]');
+    function saveRide(f) {
+        let h = JSON.parse(localStorage.getItem('as4_v21_data') || '[]');
         h.push({f: parseInt(f), d: totalKm, time: Date.now()});
-        localStorage.setItem('as4_v20_data', JSON.stringify(h)); updateUI();
+        localStorage.setItem('as4_v21_data', JSON.stringify(h)); updateUI();
     }
 
     function toggleSection(id) { let s = document.getElementById(id); s.style.display = (s.style.display === "flex" || s.style.display === "block") ? "none" : (id.includes('modal') ? "flex" : "block"); }
     function closeModal() { document.getElementById('receiptModal').style.display = "none"; }
     function updateUI() { 
-        let h = JSON.parse(localStorage.getItem('as4_v20_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v21_data') || '[]');
         let today = h.filter(i => new Date(i.time).toDateString() === new Date().toDateString()).reduce((a, b) => a + b.f, 0);
         document.getElementById('stat-today-main').innerText = today;
     }
