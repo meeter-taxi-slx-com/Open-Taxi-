@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AS4 TAXI - Ultra Pro v16</title>
+    <title>AS4 TAXI - Ultra Pro v17</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -13,6 +13,7 @@
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 15px; display: flex; justify-content: center; }
         .app-container { background: white; width: 100%; max-width: 420px; border-radius: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); padding: 25px; }
         .logo-section { text-align: center; margin-bottom: 20px; position: relative; }
+        .logo-img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); margin-bottom: 5px; }
         .logo-circle { background: var(--primary); color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 5px; font-weight: bold; border: 4px solid #fff; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .brand-name { color: var(--primary); font-size: 22px; font-weight: 900; }
         .settings-icon { position: absolute; right: 0; top: 10px; cursor: pointer; font-size: 20px; color: var(--primary); }
@@ -33,9 +34,9 @@
         .stat-box b { display: block; color: var(--primary); font-size: 14px; margin-top: 2px; }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
         .modal-content { background: white; width: 85%; max-width: 360px; border-radius: 25px; padding: 30px 20px; position: relative; margin: auto; max-height: 90vh; overflow-y: auto; }
-        #receipt-render { background: white; padding: 15px; border-radius: 15px; border: 1px solid #eee; }
+        #receipt-render { background: white; padding: 15px; border-radius: 15px; border: 1px solid #eee; text-align: center; }
         .r-header { background: black; color: white; padding: 8px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 10px; }
-        .r-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f9f9f9; font-size: 12px; }
+        .r-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f9f9f9; font-size: 12px; text-align: left; }
         .r-total-box { background: var(--primary); color: white; text-align: center; padding: 12px; border-radius: 8px; font-size: 18px; font-weight: bold; margin: 10px 0; }
         .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
         .close-btn { position: absolute; top: 10px; right: 10px; background: var(--accent); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; z-index: 1001; }
@@ -47,7 +48,7 @@
 
 <div class="app-container">
     <div class="logo-section">
-        <div class="logo-circle">AS4</div>
+        <div id="main-logo-area"><div class="logo-circle">AS4</div></div>
         <div class="brand-name">AS4 TAXI</div>
         <div class="settings-icon" onclick="toggleSection('settings-modal')">⚙️</div>
     </div>
@@ -79,11 +80,13 @@
         <div class="modal-content">
             <div class="close-btn" onclick="toggleSection('settings-modal')">X</div>
             <h3 style="color:var(--primary); text-align:center;">Settings</h3>
-            <label style="font-size:12px; font-weight:bold;">1st KM Rate:</label>
+            <label style="font-size:11px; font-weight:bold;">Logo URL (Optional):</label>
+            <input type="text" id="set-logo" placeholder="Paste Image Link Here">
+            <label style="font-size:11px; font-weight:bold;">1st KM Rate:</label>
             <input type="number" id="set-base">
-            <label style="font-size:12px; font-weight:bold;">Next KM Rate:</label>
+            <label style="font-size:11px; font-weight:bold;">Next KM Rate:</label>
             <input type="number" id="set-rate">
-            <label style="font-size:12px; font-weight:bold;">Western Province Towns:</label>
+            <label style="font-size:11px; font-weight:bold;">Western Province Towns:</label>
             <textarea id="set-towns" rows="5"></textarea>
             <button style="background:var(--secondary); width:100%; margin-top:10px;" onclick="saveSettings()">SAVE SETTINGS</button>
         </div>
@@ -111,6 +114,7 @@
     <div class="modal-content">
         <div class="close-btn" onclick="closeModal()">X</div>
         <div id="receipt-render">
+            <div id="r-logo-area"></div>
             <div class="r-header">AS4 TAXI - RECEIPT</div>
             <div id="r-body"></div>
             <div class="r-total-box" id="r-total"></div>
@@ -125,26 +129,31 @@
 
 <script>
     let sTime, watchID, totalKm = 0, lastLat, lastLon, currentRID = "";
-    let RATE = 80, BASE = 100;
+    let RATE = 80, BASE = 100, LOGO_URL = "";
     
-    // Western Province Master List
     const WP_TOWNS = "Colombo 01, Colombo 02, Colombo 03, Colombo 04, Colombo 05, Colombo 06, Colombo 07, Colombo 08, Colombo 09, Colombo 10, Colombo 11, Colombo 12, Colombo 13, Colombo 14, Colombo 15, Dehiwala, Mount Lavinia, Ratmalana, Moratuwa, Kesbewa, Piliyandala, Maharagama, Boralesgamuwa, Nugegoda, Kottawa, Pannipitiya, Homagama, Malabe, Kaduwela, Battaramulla, Athurugiriya, Hanwella, Avissawella, Gampaha, Negombo, Katunayake, Seeduwa, Ja-Ela, Kandana, Wattala, Kelaniya, Peliyagoda, Kiribathgoda, Kadawatha, Ragama, Minuwangoda, Veyangoda, Nittambuwa, Kalutara, Panadura, Wadduwa, Beruwala, Aluthgama, Horana, Bandaragama, Matugama, Agalawatte, Ingiriya";
 
     function loadSettings() {
-        let s = JSON.parse(localStorage.getItem('as4_settings') || JSON.stringify({base:100, rate:80, towns: WP_TOWNS}));
-        BASE = s.base; RATE = s.rate;
+        let s = JSON.parse(localStorage.getItem('as4_settings') || JSON.stringify({base:100, rate:80, towns: WP_TOWNS, logo:""}));
+        BASE = s.base; RATE = s.rate; LOGO_URL = s.logo;
         document.getElementById('set-base').value = BASE;
         document.getElementById('set-rate').value = RATE;
         document.getElementById('set-towns').value = s.towns;
+        document.getElementById('set-logo').value = LOGO_URL;
         document.getElementById('disp-rate-info').innerText = "Rs. " + RATE;
         document.getElementById('wp-towns').innerHTML = s.towns.split(',').map(t => `<option value="${t.trim()}">`).join('');
+        
+        if(LOGO_URL) {
+            document.getElementById('main-logo-area').innerHTML = `<img src="${LOGO_URL}" class="logo-img" onerror="this.src=''">`;
+        }
     }
 
     function saveSettings() {
         let tVal = document.getElementById('set-towns').value;
+        let lVal = document.getElementById('set-logo').value;
         BASE = parseInt(document.getElementById('set-base').value);
         RATE = parseInt(document.getElementById('set-rate').value);
-        localStorage.setItem('as4_settings', JSON.stringify({base: BASE, rate: RATE, towns: tVal}));
+        localStorage.setItem('as4_settings', JSON.stringify({base: BASE, rate: RATE, towns: tVal, logo: lVal}));
         loadSettings();
         toggleSection('settings-modal');
     }
@@ -174,7 +183,7 @@
     }
 
     function genReceiptID() {
-        let h = JSON.parse(localStorage.getItem('as4_v16_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v17_data') || '[]');
         let d = new Date();
         const m = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         return `${d.getDate()}${m[d.getMonth()]}-AS4-${(h.length + 1).toString().padStart(5, '0')}`;
@@ -187,6 +196,13 @@
         let from = document.getElementById('start-loc').value || "Current";
         let to = document.getElementById('end-loc').value || "Destination";
         currentRID = genReceiptID();
+        
+        if(LOGO_URL) {
+            document.getElementById('r-logo-area').innerHTML = `<img src="${LOGO_URL}" style="width:80px; height:80px; border-radius:50%; object-fit:cover; margin-bottom:10px;">`;
+        } else {
+            document.getElementById('r-logo-area').innerHTML = "";
+        }
+        
         document.getElementById('r-body').innerHTML = `<div class="r-row"><span>ID:</span><b>${currentRID}</b></div><div class="r-row"><span>Route:</span><b>${from}➔${to}</b></div><div class="r-row"><span>KM:</span><b>${totalKm.toFixed(2)}</b></div><div class="r-row"><span>Time:</span><b>${sTime.toLocaleTimeString()}</b></div>`;
         document.getElementById('r-total').innerText = "Total: Rs. " + fare;
         document.getElementById('qrcode').innerHTML = ""; new QRCode(document.getElementById("qrcode"), { text: currentRID, width: 80, height: 80 });
@@ -195,9 +211,9 @@
     }
 
     function saveRide(f, d, from, to, rid) {
-        let h = JSON.parse(localStorage.getItem('as4_v16_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v17_data') || '[]');
         h.push({f, d, from, to, rid, time: new Date().getTime()});
-        localStorage.setItem('as4_v16_data', JSON.stringify(h));
+        localStorage.setItem('as4_v17_data', JSON.stringify(h));
         updateUI();
     }
 
@@ -209,7 +225,7 @@
     function closeModal() { document.getElementById('receiptModal').style.display = "none"; }
 
     function updateUI() {
-        let h = JSON.parse(localStorage.getItem('as4_v16_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v17_data') || '[]');
         let tVal = h.filter(i => new Date(i.time).toDateString() === new Date().toDateString()).reduce((a, b) => a + b.f, 0);
         document.getElementById('stat-today').innerText = "Rs. " + tVal; 
         document.getElementById('stat-today-main').innerText = tVal;
@@ -223,13 +239,26 @@
     }
 
     function downloadCSV() {
-        let h = JSON.parse(localStorage.getItem('as4_v16_data') || '[]');
+        let h = JSON.parse(localStorage.getItem('as4_v17_data') || '[]');
         let csv = "ID,Date,KM,Fare\n"; h.forEach(i => csv += `${i.rid},${new Date(i.time).toLocaleDateString()},${i.d.toFixed(2)},${i.f}\n`);
         const a = document.createElement('a'); a.href = window.URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `Report_${new Date().toISOString().split('T')[0]}.csv`; a.click();
     }
 
-    async function downloadPDF() { const { jsPDF } = window.jspdf; const canvas = await html2canvas(document.getElementById('receipt-render')); const pdf = new jsPDF('p', 'mm', [80, 150]); pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 80, 150); pdf.save(`${currentRID}.pdf`); }
-    async function share() { const canvas = await html2canvas(document.getElementById('receipt-render')); canvas.toBlob(b => { const f = new File([b], `${currentRID}.png`, {type:'image/png'}); if(navigator.share) navigator.share({files:[f]}); }); }
+    async function downloadPDF() { 
+        const { jsPDF } = window.jspdf; 
+        const canvas = await html2canvas(document.getElementById('receipt-render'), {useCORS: true}); 
+        const pdf = new jsPDF('p', 'mm', [80, 160]); 
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 80, 160); 
+        pdf.save(`${currentRID}.pdf`); 
+    }
+    
+    async function share() { 
+        const canvas = await html2canvas(document.getElementById('receipt-render'), {useCORS: true}); 
+        canvas.toBlob(b => { 
+            const f = new File([b], `${currentRID}.png`, {type:'image/png'}); 
+            if(navigator.share) navigator.share({files:[f]}); 
+        }); 
+    }
 
     window.onload = () => { loadSettings(); updateUI(); };
 </script>
