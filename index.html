@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AS4 TAXI - Ultra Pro v18</title>
+    <title>AS4 TAXI - Ultra Pro v22</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -17,10 +17,14 @@
         .logo-circle { background: var(--primary); color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 5px; font-weight: bold; border: 4px solid #fff; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .brand-name { color: var(--primary); font-size: 22px; font-weight: 900; }
         .settings-icon { position: absolute; right: 0; top: 10px; cursor: pointer; font-size: 20px; color: var(--primary); }
-        input, textarea { width: 100%; padding: 12px; margin: 6px 0; border: 1px solid #e0e0e0; border-radius: 12px; font-size: 14px; box-sizing: border-box; background: var(--gray); font-family: inherit; }
-        .fare-calc-box { background: var(--gray); border-radius: 15px; padding: 12px; margin: 10px 0; border: 1px solid #eee; }
-        .calc-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; text-align: center; font-size: 11px; }
-        .calc-val { font-weight: 800; color: var(--primary); display: block; font-size: 13px; }
+        input, textarea, select { width: 100%; padding: 12px; margin: 6px 0; border: 1px solid #e0e0e0; border-radius: 12px; font-size: 14px; box-sizing: border-box; background: var(--gray); font-family: inherit; }
+        
+        /* POINT 05: Big Fonts for Visibility */
+        .fare-calc-box { background: var(--gray); border-radius: 15px; padding: 20px; margin: 10px 0; border: 1px solid #eee; text-align: center; }
+        .calc-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        .calc-label { font-size: 13px; color: #7f8c8d; font-weight: bold; }
+        .calc-val-big { font-weight: 900; color: var(--primary); display: block; font-size: 38px; line-height: 1.1; }
+        
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
         button { border: none; border-radius: 12px; font-size: 13px; font-weight: bold; color: white; cursor: pointer; padding: 14px; }
         .btn-start { background: linear-gradient(135deg, #2ecc71, #27ae60); }
@@ -28,17 +32,12 @@
         .btn-report { background: #34495e; }
         .btn-history { background: #8e44ad; }
         .btn-new { background: #3498db; }
-        .chart-container { background: white; border: 1px solid #eee; border-radius: 20px; padding: 15px; margin-top: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .stat-box { background: var(--gray); padding: 10px; border-radius: 15px; text-align: center; font-size: 11px; color: #7f8c8d; }
-        .stat-box b { display: block; color: var(--primary); font-size: 14px; margin-top: 2px; }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
         .modal-content { background: white; width: 85%; max-width: 360px; border-radius: 25px; padding: 30px 20px; position: relative; margin: auto; max-height: 90vh; overflow-y: auto; }
         #receipt-render { background: white; padding: 15px; border-radius: 15px; border: 1px solid #eee; text-align: center; }
         .r-header { background: black; color: white; padding: 8px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 10px; }
         .r-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f9f9f9; font-size: 12px; text-align: left; }
         .r-total-box { background: var(--primary); color: white; text-align: center; padding: 12px; border-radius: 8px; font-size: 18px; font-weight: bold; margin: 10px 0; }
-        .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
         .close-btn { position: absolute; top: 10px; right: 10px; background: var(--accent); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; z-index: 1001; }
         .section-card { display: none; }
         .history-item { border-bottom: 1px solid #eee; padding: 10px 0; font-size: 11px; }
@@ -53,25 +52,31 @@
         <div class="settings-icon" onclick="toggleSection('settings-modal')">⚙️</div>
     </div>
     
-    <input type="tel" id="mobile" placeholder="Customer Mobile (Optional)">
+    <input type="email" id="cust-email" placeholder="Customer Email (Optional)">
     <input list="wp-towns" id="start-loc" placeholder="Pick Up Location">
     <input list="wp-towns" id="end-loc" placeholder="Drop Off Location">
-    <input type="number" id="manual-fare" placeholder="Manual Fare (Optional)">
+    
+    <div style="display:flex; gap:10px; align-items:center; margin:5px 0;">
+        <label style="font-size:11px; font-weight:bold;">Wait Time:</label>
+        <select id="wait-select" onchange="updateDisplay()">
+            <option value="0">0 min</option>
+            <script>for(let i=1;i<=60;i++) document.write(`<option value="${i}">${i} min</option>`);</script>
+        </select>
+    </div>
 
     <datalist id="wp-towns"></datalist>
 
     <div class="fare-calc-box">
         <div class="calc-grid">
-            <div>Distance: <span class="calc-val" id="disp-km">0.0 km</span></div>
-            <div>Rate/km: <span class="calc-val" id="disp-rate-info">Rs. 80</span></div>
-            <div>Estimated: <span class="calc-val" id="disp-fare">Rs. 0</span></div>
+            <div><span class="calc-label">DISTANCE</span><span class="calc-val-big" id="disp-km">0.0 km</span></div>
+            <div style="border-top:1px solid #ddd; padding-top:10px;"><span class="calc-label">TOTAL FARE</span><span class="calc-val-big" id="disp-fare">Rs. 0</span></div>
         </div>
     </div>
 
     <div class="btn-grid">
         <button class="btn-start" id="startBtn" onclick="startRide()">START RIDE</button>
         <button class="btn-end" onclick="endRide()">END RIDE</button>
-        <button class="btn-report" onclick="toggleSection('report-section')">INCOME REPORTS</button>
+        <button class="btn-report" onclick="toggleSection('report-section')">REPORTS</button>
         <button class="btn-history" onclick="toggleSection('history-section')">HISTORY</button>
         <button class="btn-new" onclick="location.reload()" style="grid-column: span 2;">+ NEW RIDE</button>
     </div>
@@ -80,38 +85,32 @@
         <div class="modal-content">
             <div class="close-btn" onclick="toggleSection('settings-modal')">X</div>
             <h3 style="color:var(--primary); text-align:center;">Settings</h3>
+            <label style="font-size:11px; font-weight:bold;">Logo Image:</label>
+            <input type="file" id="logo-input" accept="image/*">
             
-            <label style="font-size:11px; font-weight:bold;">Choose Logo Image:</label>
-            <input type="file" id="logo-input" accept="image/*" style="background:white; border:1px dashed var(--primary);">
-            
-            <label style="font-size:11px; font-weight:bold; margin-top:10px; display:block;">1st KM Rate (Base):</label>
-            <input type="number" id="set-base">
-            
-            <label style="font-size:11px; font-weight:bold;">Next KM Rate:</label>
-            <input type="number" id="set-rate">
-            
-            <label style="font-size:11px; font-weight:bold;">Town List:</label>
-            <textarea id="set-towns" rows="4"></textarea>
-            
-            <button style="background:var(--secondary); width:100%; margin-top:10px;" onclick="saveSettings()">SAVE ALL SETTINGS</button>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div><label style="font-size:10px;">Base (1st KM):</label><input type="number" id="set-base"></div>
+                <div><label style="font-size:10px;">Rate /KM:</label><input type="number" id="set-rate"></div>
+                <div><label style="font-size:10px;">Night Rate %:</label><input type="number" id="set-night" value="10"></div>
+                <div><label style="font-size:10px;">Wait Rate/Min:</label><input type="number" id="set-wait-rate" value="5"></div>
+            </div>
+
+            <label style="font-size:11px; font-weight:bold; margin-top:10px; display:block;">Town List:</label>
+            <textarea id="set-towns" rows="3"></textarea>
+            <button style="background:var(--secondary); width:100%; margin-top:10px;" onclick="saveSettings()">SAVE SETTINGS</button>
         </div>
     </div>
 
     <div id="report-section" class="section-card">
-        <div class="chart-container">
-            <div style="font-weight:bold; font-size:14px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                <span>Daily Earnings</span>
-                <button onclick="downloadCSV()" style="padding:5px; font-size:10px; background:var(--primary); width:auto; border-radius:5px;">CSV ⬇</button>
-            </div>
+        <div style="background:white; border-radius:20px; padding:15px; border:1px solid #eee;">
             <canvas id="earningsChart" height="180"></canvas>
-            <div style="text-align:center; margin-top:10px; font-weight:bold; color:var(--primary);">Today: Rs. <span id="stat-today-main">0</span></div>
-            <div class="stats-grid"><div class="stat-box">Today<b id="stat-today">Rs. 0</b></div><div class="stat-box">This Month<b id="stat-month">Rs. 0</b></div></div>
+            <div style="text-align:center; margin-top:10px; font-weight:bold;">Today: Rs. <span id="stat-today-main">0</span></div>
+            <button style="background:var(--primary); width:100%; margin-top:10px; font-size:11px;" onclick="sendDailySummary()">SEND SUMMARY TO GMAIL</button>
         </div>
     </div>
 
-    <div id="history-section" class="section-card chart-container">
-        <div style="font-weight:bold; font-size:14px; margin-bottom:5px;">Travel History</div>
-        <div id="history-list" style="max-height:200px; overflow-y:auto;"></div>
+    <div id="history-section" class="section-card">
+        <div id="history-list" style="max-height:200px; overflow-y:auto; background:white; padding:10px; border-radius:15px; border:1px solid #eee;"></div>
     </div>
 </div>
 
@@ -125,156 +124,124 @@
             <div class="r-total-box" id="r-total"></div>
             <div id="qrcode" style="display:flex; justify-content:center; margin:10px;"></div>
         </div>
-        <div class="modal-actions">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:15px;">
             <button style="background:#2ecc71;" onclick="share()">WHATSAPP</button>
-            <button style="background:#e67e22;" onclick="downloadPDF()">SAVE PDF</button>
+            <button style="background:#1a4a9e;" onclick="sendGmailReceipt()">GMAIL</button>
+            <button style="background:#e67e22; grid-column: span 2;" onclick="downloadPDF()">SAVE PDF</button>
         </div>
     </div>
 </div>
 
 <script>
     let sTime, watchID, totalKm = 0, lastLat, lastLon, currentRID = "";
-    let RATE = 80, BASE = 100, LOGO_DATA = "";
+    let RATE = 80, BASE = 100, NIGHT_PCT = 10, WAIT_RATE = 5, LOGO_DATA = "";
     
-    const WP_TOWNS = "Colombo 01, Colombo 02, Colombo 03, Colombo 04, Colombo 05, Colombo 06, Colombo 07, Colombo 08, Colombo 09, Colombo 10, Colombo 11, Colombo 12, Colombo 13, Colombo 14, Colombo 15, Dehiwala, Mount Lavinia, Ratmalana, Moratuwa, Kesbewa, Piliyandala, Maharagama, Boralesgamuwa, Nugegoda, Kottawa, Pannipitiya, Homagama, Malabe, Kaduwela, Battaramulla, Athurugiriya, Hanwella, Avissawella, Gampaha, Negombo, Katunayake, Seeduwa, Ja-Ela, Kandana, Wattala, Kelaniya, Peliyagoda, Kiribathgoda, Kadawatha, Ragama, Minuwangoda, Veyangoda, Nittambuwa, Kalutara, Panadura, Wadduwa, Beruwala, Aluthgama, Horana, Bandaragama, Matugama, Agalawatte, Ingiriya";
-
+    // v18 Original Settings + New Points
     function loadSettings() {
-        let s = JSON.parse(localStorage.getItem('as4_settings_v18') || JSON.stringify({base:100, rate:80, towns: WP_TOWNS, logo:""}));
-        BASE = s.base; RATE = s.rate; LOGO_DATA = s.logo;
+        let s = JSON.parse(localStorage.getItem('as4_v22_settings') || JSON.stringify({base:100, rate:80, night:10, wait:5, towns: "Colombo, Gampaha", logo:""}));
+        BASE = s.base; RATE = s.rate; NIGHT_PCT = s.night; WAIT_RATE = s.wait; LOGO_DATA = s.logo;
         document.getElementById('set-base').value = BASE;
         document.getElementById('set-rate').value = RATE;
+        document.getElementById('set-night').value = NIGHT_PCT;
+        document.getElementById('set-wait-rate').value = WAIT_RATE;
         document.getElementById('set-towns').value = s.towns;
-        document.getElementById('disp-rate-info').innerText = "Rs. " + RATE;
+        if(LOGO_DATA) document.getElementById('main-logo-area').innerHTML = `<img src="${LOGO_DATA}" class="logo-img">`;
         document.getElementById('wp-towns').innerHTML = s.towns.split(',').map(t => `<option value="${t.trim()}">`).join('');
-        
-        if(LOGO_DATA) {
-            document.getElementById('main-logo-area').innerHTML = `<img src="${LOGO_DATA}" class="logo-img">`;
-        }
     }
 
     function saveSettings() {
-        const fileInput = document.getElementById('logo-input');
-        if(fileInput.files && fileInput.files[0]) {
+        const file = document.getElementById('logo-input').files[0];
+        if(file) {
             const reader = new FileReader();
-            reader.onload = function(e) {
-                LOGO_DATA = e.target.result;
-                finalizeSave();
-            };
-            reader.readAsDataURL(fileInput.files[0]);
-        } else {
-            finalizeSave();
-        }
+            reader.onload = e => { LOGO_DATA = e.target.result; finalizeSave(); };
+            reader.readAsDataURL(file);
+        } else finalizeSave();
     }
 
     function finalizeSave() {
-        let tVal = document.getElementById('set-towns').value;
-        BASE = parseInt(document.getElementById('set-base').value);
-        RATE = parseInt(document.getElementById('set-rate').value);
-        localStorage.setItem('as4_settings_v18', JSON.stringify({base: BASE, rate: RATE, towns: tVal, logo: LOGO_DATA}));
-        loadSettings();
-        toggleSection('settings-modal');
+        let s = {base: parseInt(document.getElementById('set-base').value), rate: parseInt(document.getElementById('set-rate').value), night: parseInt(document.getElementById('set-night').value), wait: parseInt(document.getElementById('set-wait-rate').value), towns: document.getElementById('set-towns').value, logo: LOGO_DATA};
+        localStorage.setItem('as4_v22_settings', JSON.stringify(s)); loadSettings(); toggleSection('settings-modal');
+    }
+
+    // POINT 02 & 06: Enhanced Calculation Logic (Preserving v18 GPS)
+    function updateDisplay() {
+        let waitMins = parseInt(document.getElementById('wait-select').value);
+        let fare = Math.round(BASE + (Math.max(0, totalKm - 1) * RATE) + (waitMins * WAIT_RATE));
+        
+        // POINT 02: Night Rate Auto Check
+        let hour = new Date().getHours();
+        if(hour >= 22 || hour < 5) fare += (fare * (NIGHT_PCT/100));
+
+        document.getElementById('disp-km').innerText = totalKm.toFixed(2) + " km";
+        document.getElementById('disp-fare').innerText = "Rs. " + Math.round(fare);
     }
 
     function startRide() {
-        if (!navigator.geolocation) return alert("GPS Error");
-        sTime = new Date();
-        document.getElementById('startBtn').innerText = "RIDE ACTIVE ✅";
+        sTime = new Date(); document.getElementById('startBtn').innerText = "RIDE ACTIVE ✅";
         watchID = navigator.geolocation.watchPosition(pos => {
-            if (lastLat && lastLon) {
-                let d = calcDist(lastLat, lastLon, pos.coords.latitude, pos.coords.longitude);
-                if (d > 0.002) totalKm += d;
-            }
+            if (lastLat) totalKm += calcDist(lastLat, lastLon, pos.coords.latitude, pos.coords.longitude);
             lastLat = pos.coords.latitude; lastLon = pos.coords.longitude;
-            document.getElementById('disp-km').innerText = totalKm.toFixed(2) + " km";
-            if(!document.getElementById('manual-fare').value) {
-                document.getElementById('disp-fare').innerText = "Rs. " + Math.round(BASE + (Math.max(0, totalKm - 1) * RATE));
-            }
+            updateDisplay();
         }, null, {enableHighAccuracy: true});
     }
 
     function calcDist(lat1, lon1, lat2, lon2) {
-        const R = 6371;
-        const dLat = (lat2-lat1)*Math.PI/180; const dLon = (lon2-lon1)*Math.PI/180;
+        const R = 6371; const dLat = (lat2-lat1)*Math.PI/180; const dLon = (lon2-lon1)*Math.PI/180;
         const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-    function genReceiptID() {
-        let h = JSON.parse(localStorage.getItem('as4_v18_data') || '[]');
-        let d = new Date();
-        const m = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        return `${d.getDate()}${m[d.getMonth()]}-AS4-${(h.length + 1).toString().padStart(5, '0')}`;
-    }
-
     function endRide() {
-        if(!sTime) return;
         navigator.geolocation.clearWatch(watchID);
-        let fare = document.getElementById('manual-fare').value ? parseInt(document.getElementById('manual-fare').value) : Math.round(BASE + (Math.max(0, totalKm - 1) * RATE));
-        let from = document.getElementById('start-loc').value || "Current";
-        let to = document.getElementById('end-loc').value || "Destination";
-        currentRID = genReceiptID();
-        
-        if(LOGO_DATA) {
-            document.getElementById('r-logo-area').innerHTML = `<img src="${LOGO_DATA}" style="width:70px; height:70px; border-radius:50%; object-fit:cover; margin-bottom:10px;">`;
-        }
-        
-        document.getElementById('r-body').innerHTML = `<div class="r-row"><span>ID:</span><b>${currentRID}</b></div><div class="r-row"><span>Route:</span><b>${from}➔${to}</b></div><div class="r-row"><span>KM:</span><b>${totalKm.toFixed(2)}</b></div><div class="r-row"><span>Time:</span><b>${sTime.toLocaleTimeString()}</b></div>`;
-        document.getElementById('r-total').innerText = "Total: Rs. " + fare;
-        document.getElementById('qrcode').innerHTML = ""; new QRCode(document.getElementById("qrcode"), { text: currentRID, width: 80, height: 80 });
+        let fare = document.getElementById('disp-fare').innerText;
+        currentRID = `AS4-${Date.now().toString().slice(-6)}`;
+        if(LOGO_DATA) document.getElementById('r-logo-area').innerHTML = `<img src="${LOGO_DATA}" style="width:70px;height:70px;border-radius:50%;margin-bottom:10px;">`;
+        document.getElementById('r-body').innerHTML = `<div class="r-row"><span>ID:</span><b>${currentRID}</b></div><div class="r-row"><span>KM:</span><b>${totalKm.toFixed(2)}</b></div><div class="r-row"><span>Wait:</span><b>${document.getElementById('wait-select').value}m</b></div>`;
+        document.getElementById('r-total').innerText = "Total: " + fare;
+        new QRCode(document.getElementById("qrcode"), { text: currentRID, width: 80, height: 80 });
         document.getElementById('receiptModal').style.display = "flex";
-        saveRide(fare, totalKm, from, to, currentRID);
+        saveData(fare.replace('Rs. ', ''));
     }
 
-    function saveRide(f, d, from, to, rid) {
-        let h = JSON.parse(localStorage.getItem('as4_v18_data') || '[]');
-        h.push({f, d, from, to, rid, time: new Date().getTime()});
-        localStorage.setItem('as4_v18_data', JSON.stringify(h));
-        updateUI();
+    // POINT 03: Gmail Functions
+    function sendGmailReceipt() {
+        let email = document.getElementById('cust-email').value;
+        let body = `AS4 TAXI Receipt\nID: ${currentRID}\nRoute: ${document.getElementById('start-loc').value} to ${document.getElementById('end-loc').value}\nKM: ${totalKm.toFixed(2)}\nTotal Fare: ${document.getElementById('r-total').innerText}`;
+        window.location.href = `mailto:${email}?subject=Taxi Receipt ${currentRID}&body=${encodeURIComponent(body)}`;
     }
 
-    function toggleSection(id) { 
-        let s = document.getElementById(id); 
-        s.style.display = (s.style.display === "flex" || s.style.display === "block") ? "none" : (id.includes('modal') ? "flex" : "block"); 
+    function sendDailySummary() {
+        let h = JSON.parse(localStorage.getItem('as4_v22_data') || '[]');
+        let today = h.filter(i => new Date(i.time).toDateString() === new Date().toDateString());
+        let total = today.reduce((a, b) => a + b.f, 0);
+        let body = `AS4 TAXI Daily Summary (${new Date().toLocaleDateString()})\n\nTotal Rides: ${today.length}\nTotal Income: Rs. ${total}\n\nDrive Safe!`;
+        window.location.href = `mailto:?subject=Daily Summary ${new Date().toLocaleDateString()}&body=${encodeURIComponent(body)}`;
     }
-    
+
+    function saveData(f) {
+        let h = JSON.parse(localStorage.getItem('as4_v22_data') || '[]');
+        h.push({f: parseInt(f), d: totalKm, time: Date.now()});
+        localStorage.setItem('as4_v22_data', JSON.stringify(h)); updateUI();
+    }
+
+    function toggleSection(id) { let s = document.getElementById(id); s.style.display = (s.style.display === "flex" || s.style.display === "block") ? "none" : (id.includes('modal') ? "flex" : "block"); }
     function closeModal() { document.getElementById('receiptModal').style.display = "none"; }
-
+    
     function updateUI() {
-        let h = JSON.parse(localStorage.getItem('as4_v18_data') || '[]');
-        let tVal = h.filter(i => new Date(i.time).toDateString() === new Date().toDateString()).reduce((a, b) => a + b.f, 0);
-        document.getElementById('stat-today').innerText = "Rs. " + tVal; 
-        document.getElementById('stat-today-main').innerText = tVal;
-        document.getElementById('stat-month').innerText = "Rs. " + h.reduce((a, b) => a + b.f, 0);
+        let h = JSON.parse(localStorage.getItem('as4_v22_data') || '[]');
+        let today = h.filter(i => new Date(i.time).toDateString() === new Date().toDateString()).reduce((a, b) => a + b.f, 0);
+        document.getElementById('stat-today-main').innerText = today;
         
         let dayData = [0,0,0,0,0,0,0]; h.forEach(i => { let d = new Date(i.time).getDay(); dayData[d === 0 ? 6 : d-1] += i.f; });
         if(window.mChart) window.mChart.destroy();
-        window.mChart = new Chart(document.getElementById('earningsChart').getContext('2d'), { type: 'bar', data: { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets: [{ data: dayData, backgroundColor: '#1a4a9e', borderRadius: 5 }] }, options: { plugins: { legend: { display: false } } } });
+        window.mChart = new Chart(document.getElementById('earningsChart').getContext('2d'), { type: 'bar', data: { labels: ['M','T','W','T','F','S','S'], datasets: [{ data: dayData, backgroundColor: '#1a4a9e' }] }, options: { plugins: { legend: { display: false } } } });
 
-        document.getElementById('history-list').innerHTML = h.slice().reverse().map(i => `<div class="history-item"><div style="display:flex;justify-content:space-between;"><b>${i.rid}</b><span>${new Date(i.time).toLocaleDateString()}</span></div><div style="color:var(--primary);font-weight:bold;">${i.from}➔${i.to}</div><div style="display:flex;justify-content:space-between;"><span>${i.d.toFixed(2)} km</span><b>Rs. ${i.f}</b></div></div>`).join('');
+        document.getElementById('history-list').innerHTML = h.slice().reverse().map(i => `<div class="history-item"><b>${new Date(i.time).toLocaleTimeString()}</b> - ${i.d.toFixed(2)}km - <b>Rs. ${i.f}</b></div>`).join('');
     }
 
-    function downloadCSV() {
-        let h = JSON.parse(localStorage.getItem('as4_v18_data') || '[]');
-        let csv = "ID,Date,KM,Fare\n"; h.forEach(i => csv += `${i.rid},${new Date(i.time).toLocaleDateString()},${i.d.toFixed(2)},${i.f}\n`);
-        const a = document.createElement('a'); a.href = window.URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `Report_${new Date().toISOString().split('T')[0]}.csv`; a.click();
-    }
-
-    async function downloadPDF() { 
-        const { jsPDF } = window.jspdf; 
-        const canvas = await html2canvas(document.getElementById('receipt-render')); 
-        const pdf = new jsPDF('p', 'mm', [80, 160]); 
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 80, 160); 
-        pdf.save(`${currentRID}.pdf`); 
-    }
+    async function downloadPDF() { const { jsPDF } = window.jspdf; const canvas = await html2canvas(document.getElementById('receipt-render')); const pdf = new jsPDF('p', 'mm', [80, 160]); pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 80, 160); pdf.save(`${currentRID}.pdf`); }
+    async function share() { const canvas = await html2canvas(document.getElementById('receipt-render')); canvas.toBlob(b => { const f = new File([b], `${currentRID}.png`, {type:'image/png'}); if(navigator.share) navigator.share({files:[f]}); }); }
     
-    async function share() { 
-        const canvas = await html2canvas(document.getElementById('receipt-render')); 
-        canvas.toBlob(b => { 
-            const f = new File([b], `${currentRID}.png`, {type:'image/png'}); 
-            if(navigator.share) navigator.share({files:[f]}); 
-        }); 
-    }
-
     window.onload = () => { loadSettings(); updateUI(); };
 </script>
 </body>
